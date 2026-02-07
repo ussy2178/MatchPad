@@ -25,6 +25,7 @@ body {
   width: 100%;
   /* Removed overflow: hidden and position: fixed to restore desktop scroll */
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 
 #root {

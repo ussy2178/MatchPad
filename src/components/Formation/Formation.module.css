@@ -49,8 +49,8 @@
     align-items: stretch;
     justify-content: center;
     gap: var(--spacing-2xl);
-    height: calc(100vh - 220px);
-    /* Strict height control */
+    height: calc(100dvh - 220px);
+    /* Strict height control with dynamic viewport */
   }
 
   /* When side-by-side, reset pitch area padding to align with side panel */
@@ -59,6 +59,8 @@
     max-width: none;
     /* Let grid control width */
     height: 100%;
+    min-height: 0;
+    /* critical for flex scroll */
     display: flex;
     flex-direction: column;
   }
@@ -76,6 +78,8 @@
     /* Remove max-height constraint to match pitch */
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    /* critical for flex scroll */
   }
 }
 
@@ -328,7 +332,7 @@
 
   /* Mobile/Tablet: Use dynamic viewport height minus header/spacing */
   width: 100%;
-  max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
 }
 
 @media (min-width: 768px) {
