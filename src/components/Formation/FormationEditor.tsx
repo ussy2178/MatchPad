@@ -97,17 +97,18 @@ export function FormationEditor() {
 
       {/* Pitch */}
       <div className={styles.editorArea}>
-        <Pitch>
+        <Pitch
+          formation={formation}
+          lineup={lineup}
+          players={players}
+        >
           {formation.positions.map((pos) => {
             const assignedPlayer = getAssignedPlayer(pos.id);
             return (
               <PlayerNode
                 key={pos.id}
-                x={pos.x}
-                y={pos.y}
-                label={pos.label}
-                playerName={assignedPlayer?.name}
-                jerseyNumber={assignedPlayer?.jerseyNumber}
+                position={pos}
+                player={assignedPlayer}
                 onClick={() => handleNodeClick(pos.id)}
                 isSelected={selectedSlot === pos.id}
               />

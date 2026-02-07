@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useLiveQuery } from 'dexie-react-hooks';
+// import { useLiveQuery } from 'dexie-react-hooks'; // Unused
 import { db, type Match } from '../../db/db';
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';

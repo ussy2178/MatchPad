@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { getSavedMatches, type MatchRecord } from '../../utils/matchStorage';
 import { useEffect, useState } from 'react';
-import styles from './SavedMatchesList.module.css'; // Assume we create this or use inline
+// import styles from './SavedMatchesList.module.css'; // Unused
 
 export function SavedMatchesList() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
