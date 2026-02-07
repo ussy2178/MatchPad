@@ -4,7 +4,6 @@ import { useTeam } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { Pitch } from './Pitch';
-import { Pitch } from './Pitch';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import styles from './Formation.module.css';
@@ -26,10 +25,11 @@ export function FormationEditor() {
 
   const formation = FORMATIONS[currentFormation];
 
-  const formation = FORMATIONS[currentFormation];
-
-  // const handleNodeClick = ... removed
-
+  // Restore handleNodeClick for interactivity
+  const handleNodeClick = (slotId: number) => {
+    setSelectedSlot(slotId);
+    setIsPickerOpen(true);
+  };
 
   const handlePlayerSelect = (playerId: string) => {
     if (selectedSlot === null) return;
@@ -60,9 +60,6 @@ export function FormationEditor() {
     });
     setIsPickerOpen(false);
   };
-
-  // const getAssignedPlayer = ... removed
-
 
   return (
     <div className={styles.container}>
@@ -99,6 +96,8 @@ export function FormationEditor() {
           formation={formation}
           lineup={lineup}
           players={players}
+          onNodeClick={handleNodeClick}
+          selectedNodeIndex={selectedSlot}
         />
       </div>
 
