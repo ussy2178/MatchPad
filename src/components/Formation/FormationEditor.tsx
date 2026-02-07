@@ -101,20 +101,7 @@ export function FormationEditor() {
           formation={formation}
           lineup={lineup}
           players={players}
-        >
-          {formation.positions.map((pos) => {
-            const assignedPlayer = getAssignedPlayer(pos.id);
-            return (
-              <PlayerNode
-                key={pos.id}
-                position={pos}
-                player={assignedPlayer}
-                onClick={() => handleNodeClick(pos.id)}
-                isSelected={selectedSlot === pos.id}
-              />
-            );
-          })}
-        </Pitch>
+        />
       </div>
 
       {/* Player Picker Modal */}

@@ -13,7 +13,6 @@ interface HalfPitchProps {
   players: Player[];
   onNodeClick: (playerId: string) => void;
   showNames?: boolean;
-  overlayOnly?: boolean;
 }
 
 export function HalfPitch({
@@ -22,8 +21,7 @@ export function HalfPitch({
   lineup,
   players,
   onNodeClick,
-  showNames = false,
-  overlayOnly = false
+  showNames = false
 }: HalfPitchProps) {
 
   // Mapping Logic:

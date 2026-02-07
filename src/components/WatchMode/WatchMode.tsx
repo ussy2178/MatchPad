@@ -1,7 +1,7 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState, useEffect } from 'react';
-import { db, type EventType, type Player } from '../../db/db';
+import { db, type Player } from '../../db/db';
 import { Stopwatch } from './Stopwatch';
 import { HalfPitch } from './HalfPitch';
 import { PlayerActionModal } from './PlayerActionModal';
