@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Layout } from './components/common/Layout';
 import { TeamList } from './components/TeamList/TeamList';
-import { PlayerList } from './components/PlayerList/PlayerList';
+// PlayerList is now used inside TeamDetailPage, but router doesn't need it directly page-level anymore
+// import { PlayerList } from './components/PlayerList/PlayerList'; 
 import { MatchCreationWizard } from './components/Match/MatchCreationWizard';
 import { WatchMode } from './components/WatchMode/WatchMode';
 import SavedMatchesPage from './pages/SavedMatchesPage';
+import { TeamDetailPage } from './pages/TeamDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { fixLegacyData } from './utils/idUtils';
 import { syncPlayersToSupabase } from './services/playerSync';
@@ -32,7 +34,7 @@ const router = createBrowserRouter([
     path: '/team/:teamId',
     element: (
       <Layout>
-        <PlayerList />
+        <TeamDetailPage />
       </Layout>
     ),
   },

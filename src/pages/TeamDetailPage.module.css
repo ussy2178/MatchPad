@@ -1,0 +1,161 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.backBtn {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.backBtn:hover {
+  background: #f3f4f6;
+}
+
+.teamBrand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.teamLogo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.logoPlaceholder {
+  width: 64px;
+  height: 64px;
+  background: #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #6b7280;
+}
+
+.teamName {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 350px 1fr;
+    /* Matches on left (narrower), Players on right */
+  }
+}
+
+.section {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  /* Mobile padding */
+  border: 1px solid #e5e7eb;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 24px;
+    /* Desktop padding */
+  }
+}
+
+/* Matches List Styles */
+.sectionHeader {
+  margin-bottom: 24px;
+}
+
+.sectionHeader h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  color: #374151;
+}
+
+.matchList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.matchCard {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.matchCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.matchDate {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.matchScore {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.score {
+  background: #fff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  font-family: monospace;
+}
+
+.ownTeam {
+  color: #2563eb;
+  /* Highlight relevant team */
+}
+
+.emptyState {
+  color: #9ca3af;
+  font-style: italic;
+  padding: 16px;
+  text-align: center;
+  background: #f9fafb;
+  border-radius: 8px;
+}

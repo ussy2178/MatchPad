@@ -8,7 +8,7 @@ import { Modal } from '../common/Modal';
 import { PlayerForm } from '../PlayerForm/PlayerForm';
 import styles from './PlayerList.module.css';
 
-export function PlayerList() {
+export function PlayerList({ embedded }: { embedded?: boolean }) {
   const { teamId } = useParams<{ teamId: string }>();
   const team = useTeam(teamId || '');
   const players = usePlayers(teamId || '');
@@ -100,16 +100,22 @@ export function PlayerList() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={styles.container} style={embedded ? { padding: 0, maxWidth: 'none' } : undefined}>
       <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          <Button variant="ghost" onClick={() => navigate('/')} aria-label="Back">
-            &larr;
-          </Button>
-          <h1 className={styles.title}>
-            {team.name} <span className={styles.subtitle}>｜ メンバー</span>
-          </h1>
-        </div>
+        {!embedded ? (
+          <div className={styles.headerLeft}>
+            <Button variant="ghost" onClick={() => navigate('/')} aria-label="Back">
+              &larr;
+            </Button>
+            <h1 className={styles.title}>
+              {team.name} <span className={styles.subtitle}>｜ メンバー</span>
+            </h1>
+          </div>
+        ) : (
+          <div className={styles.headerLeft}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>Players</h2>
+          </div>
+        )}
         <div className={styles.headerActions}>
           <input
             type="file"

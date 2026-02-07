@@ -5,9 +5,10 @@ import styles from './WatchMode.module.css';
 interface StopwatchProps {
   matchId: string;
   initialState?: TimerState;
+  compact?: boolean;
 }
 
-export function Stopwatch({ matchId, initialState }: StopwatchProps) {
+export function Stopwatch({ matchId, initialState, compact = false }: StopwatchProps) {
   // Local state for display
   const [now, setNow] = useState(Date.now());
   const [state, setState] = useState<TimerState>(initialState || {
@@ -19,7 +20,7 @@ export function Stopwatch({ matchId, initialState }: StopwatchProps) {
 
   const intervalRef = useRef<number | null>(null);
 
-  // Sync with DB whenever state changes (throttled/effect based handling)
+  // Sync with (throttled/effect based handling)
   const saveState = async (newState: TimerState) => {
     setState(newState);
     await db.matches.update(matchId, { timerState: newState });
@@ -100,6 +101,34 @@ export function Stopwatch({ matchId, initialState }: StopwatchProps) {
       setNow(Date.now());
     }
   };
+
+  if (compact) {
+    return (
+      <div className={styles.compactStopwatch}>
+        <div className={styles.compactPhase} onClick={togglePhase} title="Click to toggle phase">
+          {state.phase}
+        </div>
+        <span className={styles.compactTimer}>{timeString}</span>
+
+        <div className={styles.compactControls}>
+          <button
+            className={`${styles.compactBtn} ${state.running ? styles.pauseBtn : styles.startBtn}`}
+            onClick={togglePlay}
+          >
+            {state.running ? '❚❚' : '▶'}
+          </button>
+
+          <button
+            className={styles.resetBtn}
+            onClick={resetTimer}
+            style={{ width: 28, height: 28, fontSize: '0.9rem' }}
+          >
+            ⟲
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.stopwatchContainer}>

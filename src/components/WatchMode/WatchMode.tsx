@@ -33,6 +33,13 @@ export function WatchMode() {
   const [matchNotes, setMatchNotes] = useState<MatchNotes>(initialNotes || { firstHalf: '', secondHalf: '', fullMatch: '' });
   const [showNotesModal, setShowNotesModal] = useState(false);
 
+  // Squad Accordion State
+  const [expandedSquad, setExpandedSquad] = useState<'home' | 'away' | null>(null);
+
+  const toggleSquad = (side: 'home' | 'away') => {
+    setExpandedSquad(prev => prev === side ? null : side);
+  };
+
   // Restore events from snapshot on mount
   useEffect(() => {
     if (snapshot?.events) {
@@ -291,33 +298,37 @@ export function WatchMode() {
     <div className={styles.container}>
       <div className={styles.fixedHeader}>
         <header className={styles.watchHeader}>
-          <div style={{
-            width: '100%', maxWidth: '1200px',
-            display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
-            marginBottom: '1rem'
-          }}>
-            <Link to="/" style={{ textDecoration: 'none', color: '#666' }}>← Home</Link>
-            <span style={{ fontWeight: 'bold' }}>Watch Mode</span>
-            <div style={{ display: 'flex', gap: '8px', justifySelf: 'end' }}>
-              <button
-                onClick={() => setShowNotesModal(true)}
-                className={styles.saveBtn}
-                style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#fff', color: '#333', border: '1px solid #ccc' }}
-              >
-                Notes
-              </button>
-              <button
-                onClick={handleSaveMatch}
-                className={styles.saveBtn}
-                style={{ fontSize: '0.85rem', padding: '6px 12px' }}
-              >
-                Save Match
-              </button>
-            </div>
+          {/* Left: Home + Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <Link to="/" className={styles.homeLink}>←</Link>
+            <span className={styles.pageTitle}>Match</span>
           </div>
-          <Stopwatch matchId={match.id} initialState={match.timerState} />
+
+          {/* Center: Stopwatch (Compact) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+            <Stopwatch matchId={match.id} initialState={match.timerState} compact={true} />
+          </div>
+
+          {/* Right: Actions */}
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowNotesModal(true)}
+              className={styles.saveBtn}
+              style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#fff', color: '#333', border: '1px solid #ccc' }}
+            >
+              Notes
+            </button>
+            <button
+              onClick={handleSaveMatch}
+              className={styles.saveBtn}
+              style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+            >
+              Save
+            </button>
+          </div>
         </header>
 
+        {/* Score Panel */}
         <div className={styles.scorePanel}>
           <div className={styles.teamsHeader}>
             {/* Home Team */}
@@ -375,37 +386,56 @@ export function WatchMode() {
           </div>
         </section>
 
-        {/* ... squad section ... */}
+        {/* Squad Section - Collapsible */}
         <section className={styles.squadSection}>
-          <div className={styles.squadColumn}>
-            <h3>Home Squad</h3>
-            <div className={styles.playerList}>
-              {homePlayers.map(p => {
-                const isStarter = Object.values(match.homeLineup).includes(p.id);
-                if (!isStarter) return null;
-                return (
-                  <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
-                    <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
-                    <span className={styles.playerName}>{p.name}</span>
-                  </div>
-                );
-              })}
+
+          {/* Home Squad Accordion */}
+          <div className={styles.accordionSection}>
+            <div
+              className={styles.accordionHeader}
+              onClick={() => toggleSquad('home')}
+            >
+              <span>Home Squad</span>
+              <span className={`${styles.chevron} ${expandedSquad === 'home' ? styles.expanded : ''}`}>▼</span>
+            </div>
+            <div className={`${styles.accordionContent} ${expandedSquad === 'home' ? styles.expanded : ''}`}>
+              <div className={styles.playerList}>
+                {homePlayers.map(p => {
+                  const isStarter = Object.values(match.homeLineup).includes(p.id);
+                  if (!isStarter) return null;
+                  return (
+                    <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
+                      <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
+                      <span className={styles.playerName}>{p.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <div className={styles.squadColumn}>
-            <h3>Away Squad</h3>
-            <div className={styles.playerList}>
-              {awayPlayers.map(p => {
-                const isStarter = Object.values(match.awayLineup).includes(p.id);
-                if (!isStarter) return null;
-                return (
-                  <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
-                    <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
-                    <span className={styles.playerName}>{p.name}</span>
-                  </div>
-                );
-              })}
+          {/* Away Squad Accordion */}
+          <div className={styles.accordionSection}>
+            <div
+              className={styles.accordionHeader}
+              onClick={() => toggleSquad('away')}
+            >
+              <span>Away Squad</span>
+              <span className={`${styles.chevron} ${expandedSquad === 'away' ? styles.expanded : ''}`}>▼</span>
+            </div>
+            <div className={`${styles.accordionContent} ${expandedSquad === 'away' ? styles.expanded : ''}`}>
+              <div className={styles.playerList}>
+                {awayPlayers.map(p => {
+                  const isStarter = Object.values(match.awayLineup).includes(p.id);
+                  if (!isStarter) return null;
+                  return (
+                    <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
+                      <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
+                      <span className={styles.playerName}>{p.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>
