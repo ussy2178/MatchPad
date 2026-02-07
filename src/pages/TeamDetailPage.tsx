@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTeam } from '../hooks/useTeams';
 import { getSavedMatches, deleteMatch, type MatchRecord } from '../utils/matchStorage';
 import { PlayerList } from '../components/PlayerList/PlayerList';
@@ -8,7 +8,7 @@ import styles from './TeamDetailPage.module.css';
 
 export function TeamDetailPage() {
   const { teamId } = useParams<{ teamId: string }>();
-  const navigate = useNavigate();
+
   const team = useTeam(teamId || '');
   const [matches, setMatches] = useState<MatchRecord[]>([]);
 
@@ -39,9 +39,6 @@ export function TeamDetailPage() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
-          <button onClick={() => navigate('/')} className={styles.backBtn}>
-            &larr; Back
-          </button>
           <div className={styles.teamBrand}>
             {team.logoPath ? (
               <img src={team.logoPath} alt={team.name} className={styles.teamLogo} />

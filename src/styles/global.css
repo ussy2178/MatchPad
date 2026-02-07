@@ -19,24 +19,22 @@ body {
 
 html,
 body {
-  overflow: hidden;
-  /* Prevent document scroll */
   height: 100%;
   margin: 0;
   padding: 0;
   width: 100%;
-  position: fixed;
-  /* Lock body */
+  /* Removed overflow: hidden and position: fixed to restore desktop scroll */
   overscroll-behavior: none;
-  /* Prevent rubber-banding */
 }
 
 #root {
-  height: 100%;
+  min-height: 100dvh;
+  /* Use dynamic viewport height */
   width: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
 }
 
 .appRoot {

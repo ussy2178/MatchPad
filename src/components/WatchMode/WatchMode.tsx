@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useState, useEffect } from 'react';
 import { db, type Player } from '../../db/db';
@@ -300,7 +300,6 @@ export function WatchMode() {
         <header className={styles.watchHeader}>
           {/* Left: Home + Title */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Link to="/" className={styles.homeLink}>←</Link>
             <span className={styles.pageTitle}>Match</span>
           </div>
 

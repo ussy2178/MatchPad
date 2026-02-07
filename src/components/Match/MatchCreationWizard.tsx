@@ -201,11 +201,6 @@ export function MatchCreationWizard() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        {step === 0 && (
-          <Button variant="secondary" onClick={() => navigate('/')} className={styles.backHomeBtn}>
-            ← Home
-          </Button>
-        )}
         <h1 className={styles.title}>
           {step === 0 && 'Match Info'}
           {step === 1 && 'Home Tactics'}
