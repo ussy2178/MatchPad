@@ -1,0 +1,81 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  /* Slightly less rounded than pill, more structured */
+  font-weight: 500;
+  transition: all 0.2s ease;
+  outline: none;
+  letter-spacing: 0.02em;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Variants */
+.primary {
+  background-color: var(--color-text-main);
+  /* Dark gray/black button */
+  color: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: black;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+
+.secondary {
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-main);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: white;
+  border-color: var(--color-text-sub);
+}
+
+.danger {
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid transparent;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: #FFF5F5;
+  border-color: var(--color-error);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-text-sub);
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--color-text-main);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Sizes */
+.sm {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+}
+
+.md {
+  padding: 10px 20px;
+  font-size: 0.9375rem;
+}
+
+.lg {
+  padding: 14px 28px;
+  font-size: 1.125rem;
+}

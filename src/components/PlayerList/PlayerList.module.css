@@ -1,0 +1,133 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2xl);
+  padding: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.title {
+  font-size: 1.75rem;
+  color: var(--color-text-main);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--color-text-sub);
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-sub);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  font-weight: 400;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.playerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-bg-card);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.playerRow:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+}
+
+.playerInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xl);
+}
+
+.jersey {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+}
+
+.position {
+  font-size: 0.8125rem;
+  color: var(--color-text-sub);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--color-bg-app);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  align-self: flex-start;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.link {
+  font-size: 0.875rem;
+  color: var(--color-text-sub);
+  transition: color 0.2s;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.link:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}

@@ -1,0 +1,361 @@
+/* ... Existing styles ... */
+
+.container {
+  padding: var(--spacing-lg);
+  max-width: 90%;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tactical Board Layout */
+/* Tactical Board Layout */
+.tacticalBoard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4xl);
+  /* Generous spacing between Header and Content */
+  width: 100%;
+  max-width: 1000px;
+  /* Max width container */
+  margin: 0 auto;
+}
+
+/* Header Row */
+.boardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Center content */
+  gap: var(--spacing-xl);
+  width: 100%;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Row wrapper for Pitch + Squad */
+.boardContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  align-items: center;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .boardContent {
+    flex-direction: row;
+    align-items: flex-start;
+    /* Top align */
+    justify-content: center;
+    gap: var(--spacing-2xl);
+  }
+}
+
+/* Header styles now defined above */
+
+.teamLogo {
+  max-height: 64px;
+  max-width: 64px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+  /* Prevent scaling */
+}
+
+.teamTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  white-space: nowrap;
+}
+
+.formationSelect {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: 1rem;
+  background: white;
+}
+
+/* Pitch Area */
+.pitchArea {
+  width: 100%;
+  /* Max width handled by boardMain flex-basis usually, but keep explicit max for safety */
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  /* Remove padding to perfectly maximize space */
+  background: transparent;
+  flex-shrink: 0;
+  /* Prevent pitch shrinking */
+}
+
+.pitchContainer {
+  width: 100%;
+  aspect-ratio: 2/3;
+  position: relative;
+  background-color: #2e7d32;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  /* Touch target spacing handled by scale */
+}
+
+.pitch {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.pitchLines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.pitchLines div {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  /* Thinner lines */
+}
+
+.centerCircle {
+  top: 50%;
+  left: 50%;
+  width: 20%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+.halfwayLine {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.penaltyAreaTop {
+  top: 0;
+  left: 20%;
+  width: 60%;
+  height: 16%;
+  border-top: none !important;
+}
+
+.penaltyAreaBottom {
+  bottom: 0;
+  left: 20%;
+  width: 60%;
+  height: 16%;
+  border-bottom: none !important;
+}
+
+.goalAreaTop {
+  top: 0;
+  left: 36%;
+  width: 28%;
+  height: 6%;
+  border-top: none !important;
+}
+
+.goalAreaBottom {
+  bottom: 0;
+  left: 36%;
+  width: 28%;
+  height: 6%;
+  border-bottom: none !important;
+}
+
+.pitchContent {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+/* Player Node */
+.playerNode {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+  /* explicit */
+  width: 60px;
+  z-index: 50;
+  /* Higher z-index */
+  transition: transform 0.2s;
+}
+
+.playerNode:active {
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+.nodeCircle {
+  width: 40px;
+  /* Larger touch target */
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+  transition: all 0.2s;
+}
+
+/* Selected = Highlight active slot with solid outline, brighter accent */
+.selected .nodeCircle {
+  border-color: #ffd600;
+  /* Brighter accent */
+  box-shadow: 0 0 0 4px rgba(255, 214, 0, 0.5);
+  transform: scale(1.1);
+  z-index: 30;
+}
+
+.nodeCircle.filled {
+  background-color: var(--color-primary);
+  /* Team color */
+  color: white;
+  border-color: white;
+}
+
+/* Remove dashed placeholder styling */
+.nodeCircle.empty {
+  background-color: rgba(255, 255, 255, 0.4);
+  border-style: solid;
+  /* was dashed */
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.plusIcon {
+  font-size: 1.2rem;
+  color: white;
+  font-weight: bold;
+}
+
+.jerseyNumber {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.nodeLabel {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Squad Panel (Side Panel) */
+.sidePanel {
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  /* Mobile Default: Bottom sheet style handled via media query or JS toggle logic, 
+     but user asked for side-by-side 2 column layout.
+  */
+  width: 100%;
+  max-height: 50vh;
+  /* Scroll internally */
+}
+
+@media (min-width: 768px) {
+  .sidePanel {
+    width: 320px;
+    height: auto;
+    max-height: 600px;
+    flex: 0 0 320px;
+    margin-top: 0;
+    /* Align top with pitch */
+  }
+}
+
+.squadPanel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHeader {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.playerList {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+.positionGroup {
+  margin-bottom: var(--spacing-md);
+}
+
+.positionHeader {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  margin-bottom: var(--spacing-xs);
+}
+
+.playerItem {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.playerItem:hover {
+  background-color: var(--color-bg-sub);
+}
+
+.playerNumber {
+  width: 24px;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  font-size: 0.9rem;
+}
+
+.playerName {
+  flex: 1;
+  font-weight: 500;
+}
+
+.emptyMsg {
+  color: var(--color-text-sub);
+  text-align: center;
+  padding: var(--spacing-lg);
+  font-style: italic;
+}

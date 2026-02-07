@@ -1,0 +1,155 @@
+.container {
+  min-height: 100vh;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-main);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 64px var(--spacing-xl) var(--spacing-2xl);
+  /* Use grid or flex to align items */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  position: relative;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.backHomeBtn {
+  justify-self: start;
+  /* Reset absolute positioning */
+  position: static;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text-main);
+  text-transform: none;
+  grid-column: 2;
+  white-space: nowrap;
+}
+
+.content {
+  flex: 1;
+  padding: 0 var(--spacing-xl) var(--spacing-4xl);
+  max-width: 900px;
+  /* Wider default */
+  margin: 0 auto;
+  width: 100%;
+}
+
+.stepIndicator {
+  display: none;
+}
+
+/* Step 1: Info (Vertical Stack) */
+.formStack {
+  max-width: 500px;
+  /* Constrain step 1 width */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.label {
+  font-weight: 600;
+  color: var(--color-text-sub);
+  font-size: 0.9rem;
+}
+
+.input,
+.select {
+  padding: var(--spacing-md);
+  border: 2px solid var(--color-bg-card);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  background: white;
+  color: var(--color-text-main);
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--color-primary);
+}
+
+/* Team Selection Cards */
+.teamSelectGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+}
+
+@media (max-width: 600px) {
+  .teamSelectGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.teamSelectCard {
+  background: white;
+  border: 2px solid var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 120px;
+}
+
+.teamSelectCard.active {
+  border-color: var(--color-primary);
+  background: var(--color-bg-sub);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.teamLogoOnly {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+}
+
+/* Step 2: Unified Lineup */
+.unifiedContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--spacing-lg);
+}
+
+.matchHeader {
+  display: none;
+  /* Removed, moving to TacticalBoard internal header */
+}
+
+/* Utils */
+.hiddenInput {
+  display: none;
+}
+
+.footer {
+  padding: var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-bg-card);
+  background: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+}

@@ -1,0 +1,93 @@
+.container {
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: var(--spacing-2xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  color: var(--color-text-main);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid #E5E5E5;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  aspect-ratio: 1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  gap: var(--spacing-md);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-color: var(--color-primary-light);
+}
+
+.teamName {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-main);
+  line-height: 1.3;
+}
+
+/* Base placeholder style (circular) */
+.logoPlaceholder {
+  width: 80px;
+  /* Increased size for retina/better quality */
+  height: 80px;
+  background-color: transparent;
+  /* Transparent for images */
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  /* border-radius removed here to allow image to decide shape, 
+     or we add it only for fallback text */
+}
+
+.logoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Ensure SVG scaling is smooth */
+  will-change: transform;
+}
+
+/* Fallback text specific style (NEEDS circle background) */
+.fallbackText {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg-app);
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1.75rem;
+}

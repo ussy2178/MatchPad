@@ -1,0 +1,873 @@
+/* WatchMode Container */
+.container {
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-bg-app);
+}
+
+.watchHeader {
+  background: white;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  /* Sticky moved to fixedHeader wrapper */
+}
+
+.fixedHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  /* Changed from var(--color-bg-app) */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.scorePanel {
+  background: white;
+  /* Changed from var(--color-bg-app) */
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.scrollableContent {
+  padding-top: 16px;
+  width: 100%;
+  padding-bottom: 40px;
+}
+
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.homeLink {
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--color-text-sub);
+}
+
+.pageTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Stopwatch Redesign */
+.stopwatchContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.statsTimer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.phaseBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  background: var(--color-bg-sub);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-bottom: 2px;
+  cursor: pointer;
+}
+
+.timerDigits {
+  font-family: 'Courier New', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-text-main);
+  background: #f8f9fa;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  min-width: 140px;
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.mainBtn {
+  padding: 8px 24px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  min-width: 100px;
+  color: white;
+  transition: transform 0.1s;
+}
+
+.mainBtn:active {
+  transform: scale(0.96);
+}
+
+.startBtn {
+  background-color: #22c55e;
+  /* Green */
+}
+
+.pauseBtn {
+  background-color: #f97316;
+  /* Orange */
+}
+
+.resetBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background-color: #e5e7eb;
+  color: #374151;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.resetBtn:hover {
+  background-color: #d1d5db;
+}
+
+/* Squad Section - Expanded Layout */
+.squadSection {
+  width: 100%;
+  max-width: 1000px;
+  margin: var(--spacing-xl) auto;
+  padding: 0 var(--spacing-md);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  /* Prevent stretching */
+}
+
+.squadColumn h3 {
+  text-align: center;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-sub);
+  font-size: 1rem;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 4px;
+}
+
+.playerList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* Removed fixed height and overflow to allow expansion */
+  padding: 4px;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.listRow:hover {
+  background: var(--color-bg-sub);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.jerseyNum {
+  font-weight: 700;
+  background: var(--color-bg-app);
+  width: 28px;
+  text-align: center;
+  border-radius: 4px;
+  padding: 2px 0;
+  font-size: 0.9rem;
+}
+
+.playerName {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Events Section */
+.eventLogPanel {
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto var(--spacing-xl);
+  padding: 0 var(--spacing-md);
+}
+
+.eventLogPanel h3 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-main);
+  text-align: center;
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eventItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.eventTime {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--color-text-sub);
+}
+
+.eventTeam {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.homeTag {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* ... existing ... */
+.awayTag {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.eventTeamLogo {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+}
+
+.playerNum {
+  /* ... */
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.eventType {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.eventComment {
+  color: var(--color-text-sub);
+  font-style: italic;
+}
+
+/* Modal Reuse */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  /* Full viewport coverage */
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+/* Pitch Section - Strict Layout Fix */
+.pitchSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.pitchWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.teamsHeader {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 800px;
+  /* Constrain width for better alignment */
+}
+
+.teamBadge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.teamBadge:first-child {
+  justify-content: flex-end;
+  /* Home align right */
+}
+
+.teamBadge:last-child {
+  justify-content: flex-start;
+  /* Away align left */
+}
+
+.teamBadge img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* ... */
+.vsBadge {
+  font-weight: 900;
+  color: var(--color-text-sub);
+  font-size: 1.1rem;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.liveScore {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  line-height: 1;
+}
+
+.deleteBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #ef4444;
+  /* Red */
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.1rem;
+  opacity: 0.6;
+  transition: opacity 0.1s;
+}
+
+.deleteBtn:hover {
+  opacity: 1;
+  background: #fef2f2;
+  border-radius: 4px;
+}
+
+.goalBtn {
+  /* ... */
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s;
+}
+
+.goalBtn:hover {
+  transform: scale(1.1);
+  background: #f0fdf4;
+  border-color: #22c55e;
+}
+
+.pitchRow {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fullPitch {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 105 / 68;
+  background: #2f7d32;
+  border-radius: 12px;
+  overflow: hidden;
+  /* Ensure players and markings don't spill out */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  display: flex;
+  /* Keep flex for side-by-side HalfPitches */
+}
+
+/* Field markings for full pitch */
+/* Boundary Line - converted from ::before to explicit div to allow multiple overlaid markings */
+.pitchBoundary {
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Center Line - Using ::after to keep it simple */
+.fullPitch::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Center Circle - Using ::before as requested */
+.fullPitch::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Left penalty + goal area */
+.leftPenalty {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 140px;
+  height: 220px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translateY(-50%);
+  border-left: none;
+  /* Align with boundary */
+  pointer-events: none;
+  z-index: 1;
+}
+
+.leftGoal {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 60px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translateY(-50%);
+  border-left: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Right penalty + goal area */
+.rightPenalty {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 140px;
+  height: 220px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translateY(-50%);
+  border-right: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.rightGoal {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 60px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transform: translateY(-50%);
+  border-right: none;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.halfPitch {
+  width: 50%;
+  height: 100%;
+  position: relative;
+  /* overflow: hidden; Removed to allow players to be seen if z-index issues, but kept for half-pitch clipping */
+  /* If overlayOnly is true, we don't want background, which is handled by JSX condition on pitchContainer */
+}
+
+/* Watch Mode Player Node Override */
+.watchNode {
+  /* Positioning (Item 1) */
+  position: absolute !important;
+  transform: translate(-50%, -50%) !important;
+
+  /* Visuals (Item 2) */
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  background: #a79f97 !important;
+  border: 2px solid #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25) !important;
+  z-index: 5 !important;
+
+  /* Reset scaling/transitions */
+  transition: transform 0.12s ease !important;
+  cursor: pointer;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  pointer-events: auto !important;
+  /* Enable node clicks */
+  z-index: 10 !important;
+  /* Optimized for 60px circle */
+}
+
+/* Neutralize inner nodeCircle styles for WatchMode to allow outer style to show */
+.watchNode>div:first-child {
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  /* inherit white from parent */
+}
+
+.watchNode span {
+  font-weight: 600 !important;
+}
+
+.pitchContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 105 / 68;
+  border: 2px solid rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 2 !important;
+  transition: transform 0.12s ease !important;
+  cursor: pointer;
+  position: absolute;
+  /* Enforce absolute positioning */
+  pointer-events: none;
+  /* Disable pitch clicks */
+}
+
+/* Outer boundary */
+.pitchLines {
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+
+/* Center line */
+.pitchLines::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.6);
+  transform: translateX(-50%);
+}
+
+/* Center circle */
+.pitchLines::after {
+  content: "";
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.penalty {
+  position: absolute;
+  width: 120px;
+  height: 180px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.penalty.left {
+  left: 12px;
+  border-left: none;
+}
+
+.penalty.right {
+  right: 12px;
+  border-right: none;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-bg-sub);
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* ... */
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  color: var(--color-text-sub);
+}
+
+.stampGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.stampBtn {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  background: #f8f9fa;
+  /* Neutral */
+  color: var(--color-text-main);
+  /* Black text */
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.stampBtn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.activeStamp {
+  background: #e5e7eb;
+  border-color: var(--color-primary);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stampDot {
+  font-size: 1.2em;
+  line-height: 1;
+  border-radius: 50%;
+  /* Ensure strict circle */
+}
+
+.attack {
+  color: #ef4444;
+  /* Red */
+}
+
+.defense {
+  color: #3b82f6;
+  /* Blue */
+}
+
+.other {
+  color: #9ca3af;
+  /* Gray */
+}
+
+.commentSection {
+  padding: 0 var(--spacing-md);
+  /* ... */
+  margin-bottom: var(--spacing-md);
+}
+
+.commentInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.modalFooter {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-text-sub);
+}
+
+.saveBtn {
+  padding: 10px 24px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.saveBtn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Bench Modal Helpers */
+.benchList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+}
+
+.benchList h4 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--color-text-sub);
+  font-size: 0.9rem;
+}
+
+.benchRow {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.benchRow:hover {
+  background: var(--color-bg-sub);
+  border-color: var(--color-primary);
+}
+
+.benchNumber {
+  font-weight: 700;
+  width: 30px;
+  text-align: center;
+  color: var(--color-text-main);
+  background: var(--color-bg-app);
+  border-radius: 4px;
+  margin-right: var(--spacing-md);
+  padding: 2px 0;
+}
+
+.benchName {
+  flex: 1;
+  font-weight: 600;
+}
+
+.benchPos {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.emptyBench {
+  text-align: center;
+  color: var(--color-text-sub);
+  font-style: italic;
+  padding: var(--spacing-lg);
+}

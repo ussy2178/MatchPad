@@ -1,0 +1,47 @@
+:root {
+  /* Nordic Minimalist Palette */
+  --color-primary: #8C8279;
+  /* Warm Taupe */
+  --color-primary-light: #A39A92;
+  --color-accent: #E5E0DD;
+  /* Light Beige */
+
+  /* Neutrals */
+  --color-bg-app: #F9F7F5;
+  /* Warm Off-White */
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #2D2D2D;
+  /* Dark Warm Gray */
+  --color-text-sub: #6B6B6B;
+  /* Medium Gray */
+  --color-border: #EAEAEA;
+
+  /* Feedback */
+  --color-success: #74967F;
+  /* Muted Green */
+  --color-error: #D67C7C;
+  /* Muted Red */
+
+  /* Typography */
+  --font-family-sans: "Noto Sans", "Helvetica Neue", -apple-system, sans-serif;
+
+  /* Spacing - Increased for premium feel */
+  --spacing-xs: 6px;
+  --spacing-sm: 12px;
+  --spacing-md: 20px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+
+  /* Shadows - Extremely soft */
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 9999px;
+  /* Pill */
+}
