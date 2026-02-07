@@ -376,6 +376,8 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   /* Critical for iOS */
+  touch-action: pan-y;
+  /* Prevent browser gestures */
   padding: var(--spacing-md);
   overscroll-behavior: contain;
 }
