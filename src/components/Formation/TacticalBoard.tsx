@@ -85,13 +85,15 @@ export function TacticalBoard({
       <div className={styles.boardContent}>
         {/* Main Pitch Area */}
         <div className={styles.pitchArea}>
-          <Pitch
-            formation={formation}
-            lineup={lineup}
-            players={players}
-            onNodeClick={handleNodeClick}
-            selectedNodeIndex={selectedSlot}
-          />
+          <div className={styles.pitchCard}>
+            <Pitch
+              formation={formation}
+              lineup={lineup}
+              players={players}
+              onNodeClick={handleNodeClick}
+              selectedNodeIndex={selectedSlot}
+            />
+          </div>
         </div>
 
         {/* Side Panel (Adaptive) */}

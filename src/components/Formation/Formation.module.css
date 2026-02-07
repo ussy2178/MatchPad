@@ -83,14 +83,41 @@
 .pitchArea {
   width: 100%;
   /* Max width handled by boardMain flex-basis usually, but keep explicit max for safety */
-  max-width: 500px;
+  max-width: 600px;
+  /* Increased max-width for padding */
   display: flex;
   justify-content: center;
-  padding: 0;
-  /* Remove padding to perfectly maximize space */
+  padding: 24px;
+  /* Add breathing room */
   background: transparent;
   flex-shrink: 0;
   /* Prevent pitch shrinking */
+}
+
+.pitchCard {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pitchCard>* {
+  max-width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .pitchArea {
+    padding: 16px;
+  }
+
+  .pitchCard {
+    padding: 12px;
+    border-radius: 12px;
+  }
 }
 
 .pitchContainer {
@@ -100,7 +127,8 @@
   background-color: #2e7d32;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+  /* Moved shadow to card */
   /* Touch target spacing handled by scale */
 }
 
@@ -270,19 +298,17 @@
   display: flex;
   flex-direction: column;
 
-  /* Mobile Default: Bottom sheet style handled via media query or JS toggle logic, 
-     but user asked for side-by-side 2 column layout.
-  */
+  /* Mobile/Tablet: Use dynamic viewport height minus header/spacing */
   width: 100%;
-  max-height: 50vh;
-  /* Scroll internally */
+  max-height: calc(100vh - 220px);
 }
 
 @media (min-width: 768px) {
   .sidePanel {
     width: 320px;
     height: auto;
-    max-height: 600px;
+    max-height: 80vh;
+    /* Taller on desktop */
     flex: 0 0 320px;
     margin-top: 0;
     /* Align top with pitch */
@@ -290,9 +316,12 @@
 }
 
 .squadPanel {
-  height: 100%;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  /* Ensure it fills parent */
 }
 
 .panelHeader {
@@ -301,6 +330,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+  /* Prevent header shrinking */
 }
 
 .badge {
@@ -311,10 +342,14 @@
   border-radius: 4px;
 }
 
-.playerList {
-  flex: 1;
+.suggestionListScroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Critical for iOS */
   padding: var(--spacing-md);
+  overscroll-behavior: contain;
 }
 
 .positionGroup {

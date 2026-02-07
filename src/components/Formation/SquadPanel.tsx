@@ -56,7 +56,7 @@ export function SquadPanel({ players, onSelectPlayer, selectedPosIndex, activeCa
         {selectedPosIndex !== null && <span className={styles.badge}>Select Player</span>}
       </div>
 
-      <div className={styles.playerList}>
+      <div className={styles.suggestionListScroll}>
         {Object.entries(groupedPlayers).map(([pos, list]) => (
           (list.length > 0) && (
             <div key={pos} className={styles.positionGroup}>

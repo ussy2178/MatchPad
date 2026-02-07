@@ -6,5 +6,17 @@
 
 .main {
   flex: 1;
-  padding: var(--spacing-md);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  /* Center the container */
+  padding: 16px;
+  /* Mobile safe padding */
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 32px;
+    /* Tablet/Desktop safe padding */
+  }
 }
