@@ -1,9 +1,8 @@
 .layout {
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  /* Ensure no fixed height */
-  height: auto;
 }
 
 .main {
@@ -14,6 +13,10 @@
   /* Center the container */
   padding: 16px;
   /* Mobile safe padding */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  /* Critical for flex item scrolling */
 }
 
 @media (min-width: 768px) {

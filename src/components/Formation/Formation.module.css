@@ -4,7 +4,7 @@
   padding: var(--spacing-lg);
   max-width: 90%;
   margin: 0 auto;
-  min-height: 100vh;
+  /* min-height: 100vh; Removed for scroll fix */
   display: flex;
   flex-direction: column;
 }
