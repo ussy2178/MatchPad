@@ -6,6 +6,7 @@ import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { Pitch } from './Pitch';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
+import { AddPlayerModal } from '../players/AddPlayerModal';
 import styles from './Formation.module.css';
 
 export function FormationEditor() {
@@ -18,6 +19,7 @@ export function FormationEditor() {
   const [lineup, setLineup] = useState<{ [positionIndex: number]: string }>({}); // posIndex -> playerId
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
 
   // Load existing match data? For now, we are creating new.
 
@@ -108,6 +110,11 @@ export function FormationEditor() {
         title="Select Player"
       >
         <div className={styles.playerList}>
+          <div style={{ marginBottom: '10px' }}>
+            <Button onClick={() => setIsAddPlayerModalOpen(true)} style={{ width: '100%' }}>
+              + Add new player
+            </Button>
+          </div>
           {/* Option to clear slot */}
           {selectedSlot !== null && lineup[selectedSlot] && (
             <button className={styles.playerItem} onClick={handleRemovePlayer} style={{ color: 'red' }}>
@@ -138,6 +145,13 @@ export function FormationEditor() {
           })}
         </div>
       </Modal>
+
+      <AddPlayerModal
+        teamId={teamId || ''}
+        isOpen={isAddPlayerModalOpen}
+        onClose={() => setIsAddPlayerModalOpen(false)}
+        onPlayerCreated={(player) => handlePlayerSelect(player.id)}
+      />
     </div>
   );
 }

@@ -184,6 +184,7 @@ export function MatchCreationWizard() {
     return (
       <TacticalBoard
         teamName={teamName}
+        teamId={isHome ? matchData.homeTeamId : matchData.awayTeamId}
         logoUrl={isHome ? homeTeam?.logoPath : awayTeam?.logoPath}
         players={players}
         formationName={formation as FormationName}

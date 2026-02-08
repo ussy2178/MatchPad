@@ -33,7 +33,9 @@ export const playerService = {
 
     // Generate a simple ID logic or use UUID library. For simplicity, we can use crypto.randomUUID()
     const id = crypto.randomUUID();
-    await db.players.add({ ...player, teamId: normalizedTeamId, id });
+    const newPlayer = { ...player, teamId: normalizedTeamId, id };
+    await db.players.add(newPlayer);
+    return newPlayer;
   },
 
   async updatePlayer(id: string, updates: Partial<Player>) {

@@ -1,16 +1,8 @@
 import { backupMatchToSupabase } from '../services/supabaseBackup';
-import { type EventType, type Team, type Player, type TimerState } from '../db/db';
+import { type Team, type Player, type TimerState } from '../db/db';
+import type { MatchEvent } from '../types/match';
 
-export interface MatchEvent {
-  id: string;
-  time: number;
-  team: 'home' | 'away';
-  playerNumber: number;
-  playerId?: string;
-  type: EventType | 'Stamp' | 'Goal';
-  stampType?: string;
-  comment?: string;
-}
+export type { MatchEvent };
 
 export interface PlayerStats {
   name: string;

@@ -9,7 +9,7 @@ import styles from './PlayerForm.module.css';
 interface PlayerFormProps {
   teamId: string;
   player?: Player; // If provided, edit mode
-  onSuccess: () => void;
+  onSuccess: (player?: Player) => void;
   onCancel: () => void;
 }
 
@@ -49,10 +49,11 @@ export function PlayerForm({ teamId, player, onSuccess, onCancel }: PlayerFormPr
 
       if (player) {
         await playerService.updatePlayer(player.id, playerData);
+        onSuccess({ ...player, ...playerData });
       } else {
-        await playerService.addPlayer(playerData);
+        const newPlayer = await playerService.addPlayer(playerData);
+        onSuccess(newPlayer);
       }
-      onSuccess();
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {

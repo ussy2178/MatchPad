@@ -1,15 +1,17 @@
 import { useParams, useLocation } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState, useEffect } from 'react';
-import { db, type Player } from '../../db/db';
+import { useState, useEffect, useRef } from 'react';
+import { db, type Player, type TimerState } from '../../db/db';
 import { Stopwatch } from './Stopwatch';
 import { HalfPitch } from './HalfPitch';
 import { PlayerActionModal } from './PlayerActionModal';
 import { BenchModal } from './BenchModal';
 import { GoalModal } from './GoalModal';
 import { NotesModal } from './NotesModal';
+import { SquadAccordion } from './SquadAccordion';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
-import { saveMatch, type MatchRecord, type PlayerStats, type MatchEvent, type WatchModeState, type MatchNotes } from '../../utils/matchStorage';
+import { saveMatch, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes } from '../../utils/matchStorage';
+import type { MatchEvent } from '../../types/match';
 import styles from './WatchMode.module.css';
 
 export function WatchMode() {
@@ -17,6 +19,14 @@ export function WatchMode() {
   const location = useLocation();
   const snapshot = location.state?.snapshot as WatchModeState | undefined;
   const initialNotes = location.state?.notes as MatchNotes | undefined;
+
+  const isSnapshotMode = !!snapshot;
+
+  const timeRef = useRef(0);
+  const timerStateRef = useRef<TimerState | null>(null);
+  const [localLineups, setLocalLineups] = useState<{ home: Record<number, string>; away: Record<number, string> } | null>(
+    () => (snapshot ? { home: { ...snapshot.homeLineup }, away: { ...snapshot.awayLineup } } : null)
+  );
 
   const [actionPlayerId, setActionPlayerId] = useState<string | null>(null);
   const [subbingPlayerId, setSubbingPlayerId] = useState<string | null>(null);
@@ -89,6 +99,9 @@ export function WatchMode() {
   if (!data) return <div>Loading Match...</div>;
   const { match, homeTeam, awayTeam, homePlayers, awayPlayers } = data;
 
+  const effectiveHomeLineup = isSnapshotMode && localLineups ? localLineups.home : match.homeLineup;
+  const effectiveAwayLineup = isSnapshotMode && localLineups ? localLineups.away : match.awayLineup;
+
   const homeFormation = FORMATIONS[match.homeFormation as FormationName] || FORMATIONS['4-4-2'];
   const awayFormation = FORMATIONS[match.awayFormation as FormationName] || FORMATIONS['4-4-2'];
 
@@ -104,10 +117,10 @@ export function WatchMode() {
   const getSubbingTeamData = () => {
     if (!subbingPlayerId) return null;
     if (homePlayers.some(p => p.id === subbingPlayerId)) {
-      return { teamPlayers: homePlayers, lineup: match.homeLineup, teamSide: 'home' as const };
+      return { teamPlayers: homePlayers, lineup: effectiveHomeLineup, teamSide: 'home' as const };
     }
     if (awayPlayers.some(p => p.id === subbingPlayerId)) {
-      return { teamPlayers: awayPlayers, lineup: match.awayLineup, teamSide: 'away' as const };
+      return { teamPlayers: awayPlayers, lineup: effectiveAwayLineup, teamSide: 'away' as const };
     }
     return null;
   };
@@ -121,6 +134,7 @@ export function WatchMode() {
   };
 
   const getTime = () => {
+    if (isSnapshotMode) return timeRef.current;
     if (!match.timerState) return 0;
     const { running, startedAtMs, elapsedMs } = match.timerState;
     const now = Date.now();
@@ -156,13 +170,23 @@ export function WatchMode() {
   };
 
   const handleSubstitution = async (inPlayerId: string) => {
-    // ... existing substitution logic ...
-    if (!subbingPlayerId || !matchId || !subData) return;
-    const lineup = subData.teamSide === 'home' ? match.homeLineup : match.awayLineup;
+    if (!subbingPlayerId || !subData) return;
+    const lineup = subData.teamSide === 'home' ? effectiveHomeLineup : effectiveAwayLineup;
     const positionKey = Object.keys(lineup).find(key => lineup[Number(key)] === subbingPlayerId);
     if (!positionKey) { console.error("Could not find pos"); return; }
 
     const newLineup = { ...lineup, [positionKey]: inPlayerId };
+
+    if (isSnapshotMode) {
+      setLocalLineups(prev => prev ? {
+        home: subData.teamSide === 'home' ? newLineup : prev.home,
+        away: subData.teamSide === 'away' ? newLineup : prev.away
+      } : null);
+      setSubbingPlayerId(null);
+      return;
+    }
+
+    if (!matchId) return;
     if (subData.teamSide === 'home') {
       await db.matches.update(matchId, { homeLineup: newLineup });
     } else {
@@ -265,11 +289,11 @@ export function WatchMode() {
       awayTeam: awayTeam!,
       homePlayers,
       awayPlayers,
-      homeLineup: match.homeLineup,
-      awayLineup: match.awayLineup,
+      homeLineup: effectiveHomeLineup,
+      awayLineup: effectiveAwayLineup,
       homeFormation: match.homeFormation,
       awayFormation: match.awayFormation,
-      timerState: match.timerState,
+      timerState: isSnapshotMode ? (timerStateRef.current ?? match.timerState) : match.timerState,
       events: localEvents
     };
 
@@ -305,7 +329,14 @@ export function WatchMode() {
 
           {/* Center: Stopwatch (Compact) */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <Stopwatch matchId={match.id} initialState={match.timerState} compact={true} />
+            <Stopwatch
+              matchId={match.id}
+              initialState={match.timerState}
+              compact={true}
+              persistToDb={!isSnapshotMode}
+              syncTimeRef={isSnapshotMode ? timeRef : undefined}
+              syncTimerStateRef={isSnapshotMode ? timerStateRef : undefined}
+            />
           </div>
 
           {/* Right: Actions */}
@@ -367,7 +398,7 @@ export function WatchMode() {
                 <HalfPitch
                   side="home"
                   formation={homeFormation}
-                  lineup={match.homeLineup}
+                  lineup={effectiveHomeLineup}
                   players={homePlayers}
                   onNodeClick={handlePlayerClick}
                   showNames={false}
@@ -375,7 +406,7 @@ export function WatchMode() {
                 <HalfPitch
                   side="away"
                   formation={awayFormation}
-                  lineup={match.awayLineup}
+                  lineup={effectiveAwayLineup}
                   players={awayPlayers}
                   onNodeClick={handlePlayerClick}
                   showNames={false}
@@ -387,56 +418,22 @@ export function WatchMode() {
 
         {/* Squad Section - Collapsible */}
         <section className={styles.squadSection}>
-
-          {/* Home Squad Accordion */}
-          <div className={styles.accordionSection}>
-            <div
-              className={styles.accordionHeader}
-              onClick={() => toggleSquad('home')}
-            >
-              <span>Home Squad</span>
-              <span className={`${styles.chevron} ${expandedSquad === 'home' ? styles.expanded : ''}`}>▼</span>
-            </div>
-            <div className={`${styles.accordionContent} ${expandedSquad === 'home' ? styles.expanded : ''}`}>
-              <div className={styles.playerList}>
-                {homePlayers.map(p => {
-                  const isStarter = Object.values(match.homeLineup).includes(p.id);
-                  if (!isStarter) return null;
-                  return (
-                    <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
-                      <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
-                      <span className={styles.playerName}>{p.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Away Squad Accordion */}
-          <div className={styles.accordionSection}>
-            <div
-              className={styles.accordionHeader}
-              onClick={() => toggleSquad('away')}
-            >
-              <span>Away Squad</span>
-              <span className={`${styles.chevron} ${expandedSquad === 'away' ? styles.expanded : ''}`}>▼</span>
-            </div>
-            <div className={`${styles.accordionContent} ${expandedSquad === 'away' ? styles.expanded : ''}`}>
-              <div className={styles.playerList}>
-                {awayPlayers.map(p => {
-                  const isStarter = Object.values(match.awayLineup).includes(p.id);
-                  if (!isStarter) return null;
-                  return (
-                    <div key={p.id} className={styles.listRow} onClick={() => handlePlayerClick(p.id)}>
-                      <span className={styles.jerseyNum}>{p.jerseyNumber}</span>
-                      <span className={styles.playerName}>{p.name}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <SquadAccordion
+            side="home"
+            players={homePlayers}
+            lineup={effectiveHomeLineup}
+            onPlayerClick={handlePlayerClick}
+            expanded={expandedSquad === 'home'}
+            onToggle={() => toggleSquad('home')}
+          />
+          <SquadAccordion
+            side="away"
+            players={awayPlayers}
+            lineup={effectiveAwayLineup}
+            onPlayerClick={handlePlayerClick}
+            expanded={expandedSquad === 'away'}
+            onToggle={() => toggleSquad('away')}
+          />
         </section>
 
         <div className={styles.eventLogPanel}>
@@ -533,8 +530,8 @@ export function WatchMode() {
         onSave={handleGoalSave}
         teamName={goalModalState.team === 'home' ? homeTeam?.name || 'Home' : awayTeam?.name || 'Away'}
         players={goalModalState.team === 'home'
-          ? getActivePlayers(homePlayers, match.homeLineup)
-          : getActivePlayers(awayPlayers, match.awayLineup)
+          ? getActivePlayers(homePlayers, effectiveHomeLineup)
+          : getActivePlayers(awayPlayers, effectiveAwayLineup)
         }
       />
 

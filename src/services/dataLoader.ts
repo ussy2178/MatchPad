@@ -1,40 +1,6 @@
 import { playerService } from '../hooks/usePlayers';
 import { J1_TEAMS } from '../db/seeds';
-
-/**
- * Parses raw CSV string into a list of player objects
- */
-function parsePlayerCSV(csvContent: string) {
-  const lines = csvContent.split('\n');
-  const players = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const parts = line.split(',');
-    if (parts.length < 3) continue;
-
-    // Skip header row if present
-    const firstCol = parts[0].toLowerCase();
-    if (i === 0 && (firstCol.includes('name') || parts[1].toLowerCase().includes('jerseynumber'))) {
-      continue;
-    }
-
-    const name = parts[0].trim();
-    const jerseyNumber = parseInt(parts[1].trim(), 10);
-    const position = parts[2].trim().toUpperCase() as 'GK' | 'DF' | 'MF' | 'FW';
-
-    if (!name || isNaN(jerseyNumber)) {
-      console.warn(`[DataLoader] Skipping invalid line: ${line}`);
-      continue;
-    }
-
-    players.push({ name, jerseyNumber, position });
-  }
-
-  return players;
-}
+import { parsePlayerCSV } from '../utils/csvPlayers';
 
 /**
  * Auto-loads data from local CSVS.

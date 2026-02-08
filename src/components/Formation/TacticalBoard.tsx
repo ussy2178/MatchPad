@@ -3,6 +3,7 @@ import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { Pitch } from './Pitch';
 import { SquadPanel } from './SquadPanel';
 import type { Player } from '../../db/db';
+import { AddPlayerModal } from '../players/AddPlayerModal';
 import styles from './Formation.module.css';
 
 interface TacticalBoardProps {
@@ -11,6 +12,7 @@ interface TacticalBoardProps {
   lineup: { [posIndex: number]: string }; // playerId map
   onLineupChange: (newLineup: { [posIndex: number]: string }) => void;
   teamName: string;
+  teamId?: string;
   onFormationChange?: (fmt: string) => void;
   logoUrl?: string; // Optional logo
 }
@@ -21,12 +23,14 @@ export function TacticalBoard({
   lineup,
   onLineupChange,
   teamName,
+  teamId,
   onFormationChange,
   logoUrl,
   // side - unused for now
 }: TacticalBoardProps) {
 
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false);
 
   const formation = FORMATIONS[formationName] || FORMATIONS['4-4-2'];
 
@@ -45,6 +49,13 @@ export function TacticalBoard({
     setSelectedSlot(null);
   };
 
+
+  const handlePlayerCreated = (player: Player) => {
+    // If a slot is selected, assign to it
+    if (selectedSlot !== null) {
+      handlePlayerSelect(player);
+    }
+  };
 
 
   // Determine the label/role of the selected slot
@@ -103,9 +114,17 @@ export function TacticalBoard({
             onSelectPlayer={handlePlayerSelect}
             selectedPosIndex={selectedSlot}
             activeCategory={activeCategory || undefined}
+            onAddPlayerClick={teamId ? () => setIsAddPlayerModalOpen(true) : undefined}
           />
         </div>
       </div>
+
+      <AddPlayerModal
+        teamId={teamId || ''}
+        isOpen={isAddPlayerModalOpen}
+        onClose={() => setIsAddPlayerModalOpen(false)}
+        onPlayerCreated={handlePlayerCreated}
+      />
     </div>
   );
 }

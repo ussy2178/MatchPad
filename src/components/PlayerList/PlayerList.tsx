@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTeam } from '../../hooks/useTeams';
 import { usePlayers, playerService } from '../../hooks/usePlayers';
 import { type Player } from '../../db/db';
+import { parsePlayerCSV } from '../../utils/csvPlayers';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { PlayerForm } from '../PlayerForm/PlayerForm';
+import { AddPlayerModal } from '../players/AddPlayerModal';
 import styles from './PlayerList.module.css';
 
 export function PlayerList({ embedded }: { embedded?: boolean }) {
@@ -15,15 +17,15 @@ export function PlayerList({ embedded }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // For Edit
+  const [isAddPlayerModalOpen, setIsAddPlayerModalOpen] = useState(false); // For Add
   const [editingPlayer, setEditingPlayer] = useState<Player | undefined>(undefined);
 
   if (!teamId) return <div>Invalid Team ID</div>;
   if (!team) return <div>Loading Team...</div>;
 
   const handleAddClick = () => {
-    setEditingPlayer(undefined);
-    setIsModalOpen(true);
+    setIsAddPlayerModalOpen(true);
   };
 
   const handleEditClick = (player: Player) => {
@@ -51,38 +53,7 @@ export function PlayerList({ embedded }: { embedded?: boolean }) {
     if (!file || !teamId) return;
 
     const text = await file.text();
-    const lines = text.split('\n');
-    // Header: name,jerseyNumber,position
-    // Skip header if present or assume structure? Plan said "Expecting CSV with headers".
-    // Let's standardise: skip first line if it contains "name" or "jersey"
-
-    // We expect valid rows.
-    const newPlayers: any[] = [];
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      // Simple CSV parse, assuming no quoted commas
-      const parts = line.split(',');
-      if (parts.length < 3) continue;
-
-      // Check if header
-      if (i === 0 && (parts[0].toLowerCase().includes('name') || parts[1].toLowerCase().includes('jerseynumber'))) {
-        continue;
-      }
-
-      const name = parts[0].trim();
-      const jerseyNumber = parseInt(parts[1].trim(), 10);
-      const position = parts[2].trim().toUpperCase() as any;
-
-      if (!name || isNaN(jerseyNumber)) {
-        console.warn(`Skipping invalid line: ${line}`);
-        continue;
-      }
-
-      newPlayers.push({ name, jerseyNumber, position });
-    }
+    const newPlayers = parsePlayerCSV(text);
 
     if (newPlayers.length > 0) {
       try {
@@ -161,7 +132,7 @@ export function PlayerList({ embedded }: { embedded?: boolean }) {
       <Modal
         isOpen={isModalOpen}
         onClose={handleModalClose}
-        title={editingPlayer ? '選手を編集' : '選手を追加'}
+        title="Edit Player"
       >
         <PlayerForm
           teamId={teamId}
@@ -170,6 +141,12 @@ export function PlayerList({ embedded }: { embedded?: boolean }) {
           onCancel={handleModalClose}
         />
       </Modal>
+
+      <AddPlayerModal
+        teamId={teamId}
+        isOpen={isAddPlayerModalOpen}
+        onClose={() => setIsAddPlayerModalOpen(false)}
+      />
     </div>
   );
 }

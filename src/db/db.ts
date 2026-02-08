@@ -37,7 +37,8 @@ export interface Match {
 
 export type EventType = 'Pass' | 'Shot' | 'Defense' | 'Dribble' | 'Cross' | 'Movement' | 'Substitution';
 
-export interface MatchEvent {
+/** Dexie events table row (persisted). For UI/saved match events use types/match MatchEvent. */
+export interface EventRecord {
   id: string; // UUID
   matchId: string;
   playerId: string;
@@ -52,7 +53,7 @@ export const db = new Dexie('J1ManagerDB') as Dexie & {
   teams: EntityTable<Team, 'id'>;
   players: EntityTable<Player, 'id'>;
   matches: EntityTable<Match, 'id'>;
-  events: EntityTable<MatchEvent, 'id'>;
+  events: EntityTable<EventRecord, 'id'>;
 };
 
 // Schema definition

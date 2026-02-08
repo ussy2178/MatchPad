@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { db, type TimerState } from '../../db/db';
 import styles from './WatchMode.module.css';
 
@@ -6,9 +6,15 @@ interface StopwatchProps {
   matchId: string;
   initialState?: TimerState;
   compact?: boolean;
+  /** When false, timer state is not persisted to Dexie (e.g. snapshot mode). Default true. */
+  persistToDb?: boolean;
+  /** Optional ref to sync current elapsed ms for parent (e.g. snapshot mode getTime()). */
+  syncTimeRef?: MutableRefObject<number>;
+  /** Optional ref to sync current timer state for snapshot save (elapsedMs = totalMs, running: false). */
+  syncTimerStateRef?: MutableRefObject<TimerState | null>;
 }
 
-export function Stopwatch({ matchId, initialState, compact = false }: StopwatchProps) {
+export function Stopwatch({ matchId, initialState, compact = false, persistToDb = true, syncTimeRef, syncTimerStateRef }: StopwatchProps) {
   // Local state for display
   const [now, setNow] = useState(Date.now());
   const [state, setState] = useState<TimerState>(initialState || {
@@ -23,7 +29,9 @@ export function Stopwatch({ matchId, initialState, compact = false }: StopwatchP
   // Sync with (throttled/effect based handling)
   const saveState = async (newState: TimerState) => {
     setState(newState);
-    await db.matches.update(matchId, { timerState: newState });
+    if (persistToDb) {
+      await db.matches.update(matchId, { timerState: newState });
+    }
   };
 
   // Timer tick effect
@@ -44,6 +52,14 @@ export function Stopwatch({ matchId, initialState, compact = false }: StopwatchP
   const totalMs = state.running && state.startedAtMs
     ? (now - state.startedAtMs) + state.elapsedMs
     : state.elapsedMs;
+
+  // Sync time/state to parent refs when provided (e.g. snapshot mode)
+  useEffect(() => {
+    if (syncTimeRef) syncTimeRef.current = totalMs;
+    if (syncTimerStateRef) {
+      syncTimerStateRef.current = { ...state, elapsedMs: totalMs, startedAtMs: null, running: false };
+    }
+  }, [totalMs, state, syncTimeRef, syncTimerStateRef]);
 
   const totalSeconds = Math.floor(totalMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);

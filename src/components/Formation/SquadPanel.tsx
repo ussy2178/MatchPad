@@ -8,9 +8,10 @@ interface SquadPanelProps {
   onSelectPlayer: (player: Player) => void;
   selectedPosIndex: number | null; // If null, maybe just viewing?
   activeCategory?: 'GK' | 'DF' | 'MF' | 'FW';
+  onAddPlayerClick?: () => void;
 }
 
-export function SquadPanel({ players, onSelectPlayer, selectedPosIndex, activeCategory }: SquadPanelProps) {
+export function SquadPanel({ players, onSelectPlayer, selectedPosIndex, activeCategory, onAddPlayerClick }: SquadPanelProps) {
 
   // Track collapsed state for each group
   const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({
@@ -54,6 +55,22 @@ export function SquadPanel({ players, onSelectPlayer, selectedPosIndex, activeCa
       <div className={styles.panelHeader}>
         <h3>Suggestion</h3>
         {selectedPosIndex !== null && <span className={styles.badge}>Select Player</span>}
+        {onAddPlayerClick && (
+          <button
+            onClick={onAddPlayerClick}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              color: '#007bff',
+              cursor: 'pointer',
+              fontWeight: 500,
+              fontSize: '0.9rem'
+            }}
+          >
+            + Add Player
+          </button>
+        )}
       </div>
 
       <div className={styles.suggestionListScroll}>
