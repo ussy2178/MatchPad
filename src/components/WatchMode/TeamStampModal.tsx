@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import type { TeamEvent, TeamStampType, StampQuality } from '../../types/match';
+import type { TeamEventPayload, TeamStampType, StampQuality } from '../../types/match';
 import styles from './WatchMode.module.css';
 
 export interface TeamStampModalProps {
   team: 'home' | 'away';
-  onSubmit: (event: TeamEvent) => void;
+  onSubmit: (event: TeamEventPayload) => void;
   onClose: () => void;
 }
 
@@ -18,11 +18,10 @@ export function TeamStampModal({ team, onSubmit, onClose }: TeamStampModalProps)
   const [quality, setQuality] = useState<StampQuality>('good');
 
   const handleClick = (stamp: TeamStampType) => {
-    const event: TeamEvent = {
+    const event: TeamEventPayload = {
       type: 'team',
       team,
       stamp,
-      timestamp: Date.now(),
       quality,
     };
     onSubmit(event);

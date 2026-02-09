@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import type { MatchEvent } from '../types/match';
 
 export async function backupMatchToSupabase(match: any) {
   if (!supabase || !match) {
@@ -40,14 +41,14 @@ export async function backupMatchToSupabase(match: any) {
 
     if (!Array.isArray(match.events)) return;
 
-    const events = match.events.map((e: any) => ({
+    const events = match.events.map((e: MatchEvent) => ({
       match_id: savedMatch.id,
-      minute: e.time ?? 0, // Note: e.time is likely ms, but user asked for this mapping.
-      team: e.team ?? "",
-      player: e.playerNumber ?? 0, // Postgres integer usually
-      type: e.type ?? "",
-      sub_type: e.stampType ?? e.subType ?? null,
-      comment: e.comment ?? null,
+      minute: e.time,
+      team: e.team,
+      player: 'playerNumber' in e ? e.playerNumber : 0,
+      type: e.type,
+      sub_type: 'stampType' in e ? e.stampType ?? null : null,
+      comment: 'comment' in e ? e.comment ?? null : null,
     }));
 
     if (events.length > 0) {

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './WatchMode.module.css';
 
 const ROW_HEIGHT = 48;
-const VISIBLE_ROWS = 5;
 const MINUTES = Array.from({ length: 121 }, (_, i) => i);
 const SECONDS = Array.from({ length: 60 }, (_, i) => i);
 

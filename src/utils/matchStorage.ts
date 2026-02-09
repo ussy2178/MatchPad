@@ -1,9 +1,31 @@
 import { backupMatchToSupabase } from '../services/supabaseBackup';
 import { type Team, type Player, type TimerState } from '../db/db';
-import type { MatchEvent } from '../types/match';
-import { isSubstitutionEvent, isFormationChangeEvent } from '../types/match';
+import type { MatchEvent, FormationChangeEvent, TeamStampType, StampQuality } from '../types/match';
+import { isSubstitutionEvent, isFormationChangeEvent, isPlayerEvent } from '../types/match';
 
 export type { MatchEvent };
+
+/**
+ * Normalize events so every event has id and time (handles legacy TeamEvent with timestamp).
+ */
+export function normalizeMatchEvents(events: unknown[]): MatchEvent[] {
+  return events.map((e: unknown): MatchEvent => {
+    const ev = e as Record<string, unknown>;
+    if (ev.type === 'team') {
+      const time = typeof ev.time === 'number' ? ev.time : (typeof ev.timestamp === 'number' ? ev.timestamp : 0);
+      const id = typeof ev.id === 'string' ? ev.id : crypto.randomUUID();
+      return {
+        id,
+        time,
+        type: 'team',
+        team: ev.team as 'home' | 'away',
+        stamp: ev.stamp as TeamStampType,
+        ...(ev.quality != null ? { quality: ev.quality as StampQuality } : {}),
+      };
+    }
+    return e as MatchEvent;
+  });
+}
 
 export interface PlayerStats {
   name: string;
@@ -107,7 +129,7 @@ export function computeFormationFromEvents(
   team: 'home' | 'away'
 ): string {
   const formationChanges = events
-    .filter(ev => isFormationChangeEvent(ev) && ev.team === team)
+    .filter((ev): ev is FormationChangeEvent => isFormationChangeEvent(ev) && ev.team === team)
     .slice()
     .sort((a, b) => a.time - b.time);
   if (formationChanges.length === 0) return initialFormation;
@@ -181,14 +203,13 @@ export function computePlayerStats(events: MatchEvent[]) {
   const stats: { [playerId: string]: { [type: string]: number } } = {};
 
   for (const ev of events) {
-    if (!ev.playerId) continue;
+    if (!isPlayerEvent(ev) || !ev.playerId) continue;
 
     if (!stats[ev.playerId]) {
       stats[ev.playerId] = {};
     }
 
-    // Key: use stampType if exists, else type. 
-    const key = ev.stampType || ev.type;
+    const key = ev.stampType ?? ev.type;
     stats[ev.playerId][key] = (stats[ev.playerId][key] || 0) + 1;
   }
 

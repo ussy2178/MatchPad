@@ -16,9 +16,10 @@ import { SquadAccordion } from './SquadAccordion';
 import { AddPlayerModal } from '../players/AddPlayerModal';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { DEFAULT_MATCH_TEAM_COLOR } from '../../db/seeds';
-import { saveMatch, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes } from '../../utils/matchStorage';
+import { saveMatch, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, normalizeMatchEvents, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes } from '../../utils/matchStorage';
+import { isPlayerEvent } from '../../types/match';
 import { reassignLineupToFormation } from '../../utils/formationUtils';
-import type { MatchEvent, SubstitutionEvent, TeamEvent, FormationChangeEvent } from '../../types/match';
+import type { MatchEvent, PlayerEvent, SubstitutionEvent, TeamEvent, TeamEventPayload, FormationChangeEvent } from '../../types/match';
 import { formatMatchEvent } from '../../utils/formatMatchEvent';
 import { toPastelColor } from '../../utils/colorUtils';
 import { MatchContext } from '../../contexts/MatchContext';
@@ -81,10 +82,10 @@ export function WatchMode() {
   const [awayLineupOverrides, setAwayLineupOverrides] = useState<Record<number, string>>({});
   const [pendingAssignmentAfterAdd, setPendingAssignmentAfterAdd] = useState<{ side: 'home' | 'away'; slotId: number } | null>(null);
 
-  // Restore events from snapshot on mount
+  // Restore events from snapshot on mount (normalize for legacy TeamEvent with timestamp)
   useEffect(() => {
     if (snapshot?.events) {
-      setLocalEvents(snapshot.events);
+      setLocalEvents(normalizeMatchEvents(snapshot.events));
     }
   }, [snapshot]);
 
@@ -211,8 +212,8 @@ export function WatchMode() {
   if (!data) return <div>Loading Match...</div>;
   const { homeTeam, awayTeam } = data;
 
-  const effectiveHomeBench = isSnapshotMode ? (snapshot?.homeBench ?? []) : (match!.homeBench ?? []);
-  const effectiveAwayBench = isSnapshotMode ? (snapshot?.awayBench ?? []) : (match!.awayBench ?? []);
+  const effectiveHomeBench = isSnapshotMode ? (snapshot?.homeBench ?? []) : (match?.homeBench ?? []);
+  const effectiveAwayBench = isSnapshotMode ? (snapshot?.awayBench ?? []) : (match?.awayBench ?? []);
 
   const homeFormation = FORMATIONS[effectiveHomeFormationName as FormationName] || FORMATIONS['4-4-2'];
   const awayFormation = FORMATIONS[effectiveAwayFormationName as FormationName] || FORMATIONS['4-4-2'];
@@ -274,7 +275,7 @@ export function WatchMode() {
 
   const getTime = () => {
     if (isSnapshotMode) return timeRef.current;
-    if (!match.timerState) return 0;
+    if (!match || !match.timerState) return 0;
     const { running, startedAtMs, elapsedMs } = match.timerState;
     const now = Date.now();
     return running && startedAtMs ? (now - startedAtMs) + elapsedMs : elapsedMs;
@@ -291,7 +292,7 @@ export function WatchMode() {
       team: isHome ? 'home' : 'away',
       playerNumber: player.jerseyNumber,
       playerId: player.id,
-      type: type as any,
+      type: type as PlayerEvent['type'],
       stampType: subType || undefined,
       quality: type === 'Stamp' ? (quality ?? 'good') : undefined,
       comment
@@ -429,8 +430,8 @@ export function WatchMode() {
     setLocalEvents(prev => [event, ...prev]);
   };
 
-  const handleTeamStampSubmit = (event: TeamEvent) => {
-    const toPush: TeamEvent & { id: string; time: number } = {
+  const handleTeamStampSubmit = (event: TeamEventPayload) => {
+    const toPush: TeamEvent = {
       ...event,
       id: crypto.randomUUID(),
       time: getTime(),
@@ -457,10 +458,10 @@ export function WatchMode() {
     const summary: { [key: string]: PlayerStats } = {};
 
     localEvents.forEach(ev => {
-      if (ev.type === 'Substitution') return;
+      if (!isPlayerEvent(ev) || !ev.playerId) return;
 
       const players = ev.team === 'home' ? homePlayers : awayPlayers;
-      const player = ev.playerId ? players.find(p => p.id === ev.playerId) : players.find(p => p.jerseyNumber === ev.playerNumber);
+      const player = players.find(p => p.id === ev.playerId);
 
       if (player) {
         if (!summary[player.id]) {
@@ -470,7 +471,7 @@ export function WatchMode() {
           };
         }
 
-        const typeKey = ev.type === 'Goal' ? 'goal' : (ev.stampType || 'other');
+        const typeKey = ev.type === 'Goal' ? 'goal' : (ev.stampType ?? 'other');
 
         if (summary[player.id].counts[typeKey] === undefined) {
           summary[player.id].counts[typeKey] = 0;
@@ -480,31 +481,33 @@ export function WatchMode() {
     });
 
     // Create Snapshot for Replay (use display lineups so assignment overrides are included)
+    const m = match ?? snapshot;
+    const matchId = m && 'id' in m ? m.id : (snapshot?.matchId ?? '');
     const currentSnapshot: WatchModeState = {
-      matchId: match.id,
+      matchId,
       homeTeam: homeTeam!,
       awayTeam: awayTeam!,
       homePlayers,
       awayPlayers,
-      initialHomeLineup: match.homeLineup,
-      initialAwayLineup: match.awayLineup,
+      initialHomeLineup: match?.homeLineup ?? snapshot?.initialHomeLineup ?? snapshot?.homeLineup ?? {},
+      initialAwayLineup: match?.awayLineup ?? snapshot?.initialAwayLineup ?? snapshot?.awayLineup ?? {},
       homeLineup: displayHomeLineup,
       awayLineup: displayAwayLineup,
       homeBench: effectiveHomeBench,
       awayBench: effectiveAwayBench,
-      homeFormation: match.homeFormation,
-      awayFormation: match.awayFormation,
-      timerState: isSnapshotMode ? (timerStateRef.current ?? match.timerState) : match.timerState,
+      homeFormation: match?.homeFormation ?? snapshot?.homeFormation ?? '4-4-2',
+      awayFormation: match?.awayFormation ?? snapshot?.awayFormation ?? '4-4-2',
+      timerState: isSnapshotMode ? (timerStateRef.current ?? match?.timerState) : match?.timerState,
       events: localEvents,
-      homeTeamColor: isSnapshotMode ? (overrideHomeColor ?? snapshot?.homeTeamColor) : match.homeTeamColor,
-      awayTeamColor: isSnapshotMode ? (overrideAwayColor ?? snapshot?.awayTeamColor) : match.awayTeamColor
+      homeTeamColor: isSnapshotMode ? (overrideHomeColor ?? snapshot?.homeTeamColor) : match?.homeTeamColor,
+      awayTeamColor: isSnapshotMode ? (overrideAwayColor ?? snapshot?.awayTeamColor) : match?.awayTeamColor
     };
 
     const record: MatchRecord = {
       id: crypto.randomUUID(),
       date: new Date().toISOString(),
-      homeTeam: homeTeam?.name || 'Home',
-      awayTeam: awayTeam?.name || 'Away',
+      homeTeam: homeTeam?.name ?? 'Home',
+      awayTeam: awayTeam?.name ?? 'Away',
       score: { home: homeScore, away: awayScore },
       events: localEvents,
       playerSummary: summary,
@@ -541,8 +544,8 @@ export function WatchMode() {
           {/* Center: Stopwatch (Compact) - aligned with score below */}
           <div className={styles.headerCenter}>
             <Stopwatch
-              matchId={match.id}
-              initialState={match.timerState}
+              matchId={match?.id ?? snapshot?.matchId ?? ''}
+              initialState={match?.timerState}
               compact={true}
               persistToDb={!isSnapshotMode}
               syncTimeRef={isSnapshotMode ? timeRef : undefined}
@@ -719,7 +722,7 @@ export function WatchMode() {
           ) : (
             <div className={styles.eventList}>
               {localEvents.map(ev => {
-                const timeMs = 'time' in ev ? ev.time : (ev as { timestamp?: number }).timestamp ?? 0;
+                const timeMs = ev.time;
                 const minutes = Math.floor(timeMs / 60000);
                 const seconds = Math.floor((timeMs % 60000) / 1000);
                 const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -729,7 +732,7 @@ export function WatchMode() {
                 const showTeamName = isTeamEvent || ev.type === 'FORMATION_CHANGE';
 
                 return (
-                  <div key={'id' in ev ? ev.id : `ev-${timeMs}-${ev.type}`} className={styles.eventItem}>
+                  <div key={ev.id} className={styles.eventItem}>
                     <span className={styles.eventTime}>[{timeStr}]</span>
                     {showTeamName ? (
                       <>
@@ -804,7 +807,7 @@ export function WatchMode() {
         eligibleInPlayers={eligibleSubstitutes}
         onSelect={handleSubstitution}
         onAddPlayerClick={subbingPlayerId && subData ? () => {
-          setAddPlayerTeamId(subData.teamSide === 'home' ? match.homeTeamId : match.awayTeamId);
+          setAddPlayerTeamId((subData.teamSide === 'home' ? (match?.homeTeamId ?? snapshot?.homeTeam?.id) : (match?.awayTeamId ?? snapshot?.awayTeam?.id)) ?? null);
           setAddPlayerModalOpen(true);
         } : undefined}
         onOpenFormationChange={subbingPlayerId && subData ? () => {
@@ -962,7 +965,7 @@ export function WatchMode() {
           onSelect={handleAssignmentSelect}
           onAddPlayerClick={() => {
             setPendingAssignmentAfterAdd({ side: assignmentModal.side, slotId: assignmentModal.slotId });
-            setAddPlayerTeamId(assignmentModal.side === 'home' ? homeTeam.id : awayTeam.id);
+            setAddPlayerTeamId(assignmentModal.side === 'home' ? (homeTeam?.id ?? '') : (awayTeam?.id ?? ''));
             setAddPlayerModalOpen(true);
           }}
         />

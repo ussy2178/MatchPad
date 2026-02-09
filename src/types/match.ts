@@ -2,6 +2,13 @@ import type { EventType } from '../db/db';
 
 export type { EventType };
 
+/** Base fields present on every match event (for sorting, keys, delete). */
+export interface BaseEvent {
+  id: string;
+  /** Ms from match start. */
+  time: number;
+}
+
 /** Team-level stamp type. */
 export type TeamStampType =
   | 'buildUp'
@@ -11,20 +18,20 @@ export type TeamStampType =
 /** Quality of a stamp (good/bad). Default: "good". */
 export type StampQuality = 'good' | 'bad';
 
-/** Team-level event (not player-specific). */
-export interface TeamEvent {
+/** Team-level event (not player-specific). Uses BaseEvent id/time like other events. */
+export interface TeamEvent extends BaseEvent {
   type: 'team';
   team: 'home' | 'away';
   stamp: TeamStampType;
-  timestamp: number;
   /** Quality of the stamp. Default: "good". */
   quality?: StampQuality;
 }
 
+/** Payload for creating a team event (modal); id and time are set when adding to the list. */
+export type TeamEventPayload = Omit<TeamEvent, 'id' | 'time'>;
+
 /** Player stamp or goal event (single player). */
-export interface PlayerEvent {
-  id: string;
-  time: number;
+export interface PlayerEvent extends BaseEvent {
   team: 'home' | 'away';
   playerNumber: number;
   playerId?: string;
@@ -39,9 +46,7 @@ export interface PlayerEvent {
  * Formation change event.
  * Records tactical formation change with lineup snapshot.
  */
-export interface FormationChangeEvent {
-  id: string;
-  time: number;
+export interface FormationChangeEvent extends BaseEvent {
   type: 'FORMATION_CHANGE';
   team: 'home' | 'away';
   fromFormation: string;
@@ -51,13 +56,9 @@ export interface FormationChangeEvent {
 
 /**
  * Dedicated substitution event (not a stamp).
- * type: "Substitution", team (home/away), playerInId, playerOutId, time (timestamp ms from match start).
- * playerInId/playerOutId optional for legacy saved events.
+ * type: "Substitution", team (home/away), playerInId, playerOutId, time (ms from match start).
  */
-export interface SubstitutionEvent {
-  id: string;
-  /** Timestamp: ms from match start */
-  time: number;
+export interface SubstitutionEvent extends BaseEvent {
   team: 'home' | 'away';
   type: 'Substitution';
   playerInId?: string;
@@ -67,7 +68,7 @@ export interface SubstitutionEvent {
 
 /**
  * Shared MatchEvent type for UI and saved match records.
- * Union so rendering can support both player events and substitutions.
+ * All variants have id and time (BaseEvent).
  */
 export type MatchEvent = PlayerEvent | SubstitutionEvent | TeamEvent | FormationChangeEvent;
 
@@ -77,4 +78,12 @@ export function isSubstitutionEvent(ev: MatchEvent): ev is SubstitutionEvent {
 
 export function isFormationChangeEvent(ev: MatchEvent): ev is FormationChangeEvent {
   return ev.type === 'FORMATION_CHANGE';
+}
+
+export function isTeamEvent(ev: MatchEvent): ev is TeamEvent {
+  return ev.type === 'team';
+}
+
+export function isPlayerEvent(ev: MatchEvent): ev is PlayerEvent {
+  return ev.type !== 'Substitution' && ev.type !== 'FORMATION_CHANGE' && ev.type !== 'team';
 }
