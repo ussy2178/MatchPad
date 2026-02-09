@@ -32,7 +32,15 @@ export interface Match {
   homeLineup: { [positionIndex: number]: string };
   awayLineup: { [positionIndex: number]: string };
 
+  /** Optional bench player IDs. If empty/absent, substitutions can select from any non-active team player. */
+  homeBench?: string[];
+  awayBench?: string[];
+
   timerState?: TimerState;
+
+  /** Optional per-match team colors (player marker border). Not global team data. */
+  homeTeamColor?: string;
+  awayTeamColor?: string;
 }
 
 export type EventType = 'Pass' | 'Shot' | 'Defense' | 'Dribble' | 'Cross' | 'Movement' | 'Substitution';

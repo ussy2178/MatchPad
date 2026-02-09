@@ -2,7 +2,17 @@ export interface Team {
   id: string;
   name: string;
   logoPath?: string;
+  /** Team theme color (e.g. player marker border). Fallback: DEFAULT_TEAM_PRIMARY. */
+  primaryColor?: string;
+  /** Secondary theme color. Fallback: DEFAULT_TEAM_SECONDARY. */
+  secondaryColor?: string;
 }
+
+export const DEFAULT_TEAM_PRIMARY = '#2563eb';
+export const DEFAULT_TEAM_SECONDARY = '#1e40af';
+
+/** Default per-match team marker color when none is selected (neutral gray). */
+export const DEFAULT_MATCH_TEAM_COLOR = '#9ca3af';
 
 export const J1_TEAMS: Team[] = [
   { id: 'kashima-antlers', name: '鹿島アントラーズ', logoPath: '/logos/kashima-antlers.png' },

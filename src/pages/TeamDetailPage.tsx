@@ -4,6 +4,8 @@ import { useTeam } from '../hooks/useTeams';
 import { getSavedMatches, deleteMatch, type MatchRecord } from '../utils/matchStorage';
 import { PlayerList } from '../components/PlayerList/PlayerList';
 import { MatchCard } from '../components/Match/MatchCard';
+import { TeamSettingsModal } from '../components/TeamSettingsModal';
+import { db } from '../db/db';
 import styles from './TeamDetailPage.module.css';
 
 export function TeamDetailPage() {
@@ -11,6 +13,7 @@ export function TeamDetailPage() {
 
   const team = useTeam(teamId || '');
   const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!teamId) return;
@@ -47,8 +50,25 @@ export function TeamDetailPage() {
             )}
             <h1 className={styles.teamName}>{team.name}</h1>
           </div>
+          <button
+            type="button"
+            className={styles.backBtn}
+            onClick={() => setSettingsOpen(true)}
+          >
+            Settings
+          </button>
         </div>
       </header>
+
+      <TeamSettingsModal
+        isOpen={settingsOpen}
+        team={team}
+        onSave={async (updates) => {
+          if (teamId) await db.teams.update(teamId, updates);
+          setSettingsOpen(false);
+        }}
+        onClose={() => setSettingsOpen(false)}
+      />
 
       {/* Main Content Grid */}
       <div className={styles.grid}>

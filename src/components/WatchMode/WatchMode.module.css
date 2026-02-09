@@ -1,35 +1,28 @@
-/* WatchMode Container */
-/* WatchMode Container */
+/* WatchMode Container - content-sized on desktop, full viewport on mobile */
 .container {
   padding: 0;
-  height: 100%;
-  /* App shell */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: var(--color-bg-app);
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .watchHeader {
   background: white;
   padding: 8px 16px;
-  /* Reduced padding */
   border-bottom: 1px solid var(--color-border);
-  display: flex;
-  /* Use flex for inline layout */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   height: 60px;
-  /* Fixed height for consistency */
 }
 
 .fixedHeader {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
   background: white;
-  /* Changed from var(--color-bg-app) */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -46,13 +39,70 @@
 }
 
 .scrollableContent {
-  padding-top: 16px;
   width: 100%;
-  padding-bottom: 40px;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  min-height: 0;
+  padding: 20px 24px 40px;
+}
+
+.matchRowWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.columnPitch {
+  order: -1;
+}
+
+@media (min-width: 900px) {
+  .scrollableContent {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+    padding: 20px 24px 24px;
+  }
+
+  .matchRowWrapper {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr;
+    gap: 16px;
+    align-items: start;
+    width: 100%;
+  }
+
+  .columnHome {
+    grid-column: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .columnPitch {
+    grid-column: 2;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    order: unset;
+  }
+
+  .columnAway {
+    grid-column: 3;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .eventLogPanel {
+    width: 100%;
+  }
 }
 
 .headerTop {
@@ -73,6 +123,18 @@
 .pageTitle {
   font-weight: 700;
   font-size: 1.1rem;
+}
+
+.headerCenter {
+  display: flex;
+  justify-content: center;
+  justify-self: center;
+}
+
+.headerRight {
+  display: flex;
+  gap: 8px;
+  justify-self: end;
 }
 
 /* Stopwatch Redesign */
@@ -239,6 +301,15 @@
   background: #f1f5f9;
 }
 
+.accordionHeaderStatic {
+  cursor: default;
+  pointer-events: none;
+}
+
+.accordionHeaderStatic:hover {
+  background: #f8fafc;
+}
+
 .accordionContent {
   display: none;
   padding: 8px;
@@ -271,7 +342,7 @@
   transform: rotate(180deg);
 }
 
-/* Squad Section - Expanded Layout */
+/* Squad Section - Expanded Layout (mobile stacked layout uses columnHome/columnAway) */
 .squadSection {
   width: 100%;
   max-width: 1000px;
@@ -281,7 +352,64 @@
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
-  /* Prevent stretching */
+}
+
+@media (min-width: 900px) {
+  .columnHome .accordionSection,
+  .columnAway .accordionSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .columnHome .accordionHeader,
+  .columnAway .accordionHeader {
+    flex-shrink: 0;
+    padding: 8px 12px;
+  }
+
+  .columnHome .accordionContent,
+  .columnAway .accordionContent {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: block;
+  }
+
+  .columnHome .accordionContent.expanded,
+  .columnAway .accordionContent.expanded {
+    display: block;
+  }
+
+  .columnHome .playerList,
+  .columnAway .playerList {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .columnHome .listRow,
+  .columnAway .listRow {
+    padding: 3px 8px;
+    min-height: 40px;
+    line-height: 1.4;
+  }
+
+  .columnHome .jerseyNum,
+  .columnAway .jerseyNum {
+    font-size: 12px;
+    font-weight: 500;
+    width: 24px;
+  }
+
+  .columnHome .playerName,
+  .columnAway .playerName {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
 }
 
 .squadColumn h3 {
@@ -299,6 +427,14 @@
   gap: 6px;
   /* Removed fixed height and overflow to allow expansion */
   padding: 4px;
+}
+
+.squadFooter {
+  background-color: var(--squad-team-color);
+  opacity: 0.15;
+  min-height: 12px;
+  margin-top: 8px;
+  border-radius: 0 0 8px 8px;
 }
 
 .listRow {
@@ -334,12 +470,47 @@
   font-size: 0.95rem;
 }
 
+.subBtn {
+  margin-left: auto;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  background: transparent;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.subBtn:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--color-primary, #2563eb);
+}
+
 /* Events Section */
 .eventLogPanel {
   width: 100%;
   max-width: 1000px;
   margin: 0 auto var(--spacing-xl);
   padding: 0 var(--spacing-md);
+}
+
+@media (min-width: 900px) {
+  .eventLogPanel {
+    flex-shrink: 0;
+    max-height: min(22vh, 180px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 0;
+    padding: 8px 16px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .eventLogPanel h3 {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
 }
 
 .eventLogPanel h3 {
@@ -396,15 +567,42 @@
   object-fit: contain;
 }
 
+.eventTeamName {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
 .playerNum {
   /* ... */
   font-weight: 700;
   color: var(--color-text-main);
 }
 
+.qualityBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.qualityGood {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.qualityBad {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .eventType {
   font-weight: 600;
   color: var(--color-primary);
+}
+
+.eventTypeSubstitution {
+  white-space: pre-line;
 }
 
 .eventComment {
@@ -425,19 +623,48 @@
   backdrop-filter: blur(2px);
 }
 
-/* Pitch Section - Strict Layout Fix */
+/* Pitch Section - Centered with horizontal margins, fits in viewport */
 .pitchSection {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   width: 100%;
+  margin-top: 16px;
+  margin-bottom: 16px;
 }
 
+@media (min-width: 900px) {
+  .columnPitch .pitchSection {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .columnPitch .pitchWrapper {
+    width: 100%;
+    max-width: min(calc(100vw - 48px), 900px);
+    padding: 0;
+    margin: 0;
+  }
+
+  .columnPitch .fullPitch {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Soccer field wrapper: defines height via aspect-ratio so field never collapses with auto-height parent */
 .pitchWrapper {
   width: 100%;
-  display: flex;
-  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
+  aspect-ratio: 105 / 68;
+  position: relative;
 }
 
 .teamsHeader {
@@ -472,6 +699,21 @@
   height: 36px;
   width: auto;
   object-fit: contain;
+}
+
+.teamColorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  flex-shrink: 0;
+}
+
+.teamColorDotWhite {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 /* ... */
@@ -534,8 +776,25 @@
   border-color: #22c55e;
 }
 
+.teamStampBtn {
+  border-radius: 8px;
+  width: auto;
+  height: auto;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.teamStampBtn:hover {
+  transform: scale(1.02);
+}
+
 .pitchRow {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -544,14 +803,13 @@
 .fullPitch {
   position: relative;
   width: 100%;
-  aspect-ratio: 105 / 68;
-  background: #2f7d32;
+  height: 100%;
+  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  /* Ensure players and markings don't spill out */
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e7eb;
   display: flex;
-  /* Keep flex for side-by-side HalfPitches */
 }
 
 /* Field markings for full pitch */
@@ -559,7 +817,7 @@
 .pitchBoundary {
   position: absolute;
   inset: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(0, 0, 0, 0.35);
   pointer-events: none;
   z-index: 1;
 }
@@ -572,7 +830,7 @@
   bottom: 0;
   left: 50%;
   width: 2px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 1;
   pointer-events: none;
 }
@@ -585,24 +843,23 @@
   left: 50%;
   width: 120px;
   height: 120px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(0, 0, 0, 0.35);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 1;
 }
 
-/* Left penalty + goal area */
+/* Left penalty + goal area (depth = 16% of field length per real pitch ratio) */
 .leftPenalty {
   position: absolute;
   left: 12px;
   top: 50%;
-  width: 140px;
-  height: 220px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  width: 16%;
+  height: 60%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
   transform: translateY(-50%);
   border-left: none;
-  /* Align with boundary */
   pointer-events: none;
   z-index: 1;
 }
@@ -611,23 +868,23 @@
   position: absolute;
   left: 12px;
   top: 50%;
-  width: 60px;
-  height: 120px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  width: 5.5%;
+  height: 27%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
   transform: translateY(-50%);
   border-left: none;
   pointer-events: none;
   z-index: 1;
 }
 
-/* Right penalty + goal area */
+/* Right penalty + goal area (depth = 16% of field length per real pitch ratio) */
 .rightPenalty {
   position: absolute;
   right: 12px;
   top: 50%;
-  width: 140px;
-  height: 220px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  width: 16%;
+  height: 60%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
   transform: translateY(-50%);
   border-right: none;
   pointer-events: none;
@@ -638,9 +895,9 @@
   position: absolute;
   right: 12px;
   top: 50%;
-  width: 60px;
-  height: 120px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  width: 5.5%;
+  height: 27%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
   transform: translateY(-50%);
   border-right: none;
   pointer-events: none;
@@ -655,62 +912,70 @@
   /* If overlayOnly is true, we don't want background, which is handled by JSX condition on pitchContainer */
 }
 
-/* Watch Mode Player Node Override */
+/* Watch Mode Player Node Override - tactical board style */
 .watchNode {
-  /* Positioning (Item 1) */
   position: absolute !important;
   transform: translate(-50%, -50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: auto !important;
+  min-width: 38px !important;
+  height: auto !important;
+  min-height: 38px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  z-index: 5 !important;
+  transition: transform 0.12s ease !important;
+  cursor: pointer;
+  pointer-events: auto !important;
+  z-index: 10 !important;
+  padding: 5px !important;
+  margin: -5px !important;
+  box-sizing: content-box !important;
+}
 
-  /* Visuals (Item 2) */
-  width: 60px !important;
-  height: 60px !important;
+/* Circle: border and background set via inline style (teamColor) in PlayerNode */
+.watchNode > div:first-child {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
   border-radius: 50% !important;
-  background: #a79f97 !important;
-  border: 2px solid #ffffff !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25) !important;
-  z-index: 5 !important;
-
-  /* Reset scaling/transitions */
-  transition: transform 0.12s ease !important;
-  cursor: pointer;
-  font-size: 22px !important;
-  font-weight: 600 !important;
-  line-height: 1 !important;
-  pointer-events: auto !important;
-  /* Enable node clicks */
-  z-index: 10 !important;
-  /* Optimized for 60px circle */
-}
-
-/* Neutralize inner nodeCircle styles for WatchMode to allow outer style to show */
-.watchNode>div:first-child {
-  width: 100%;
-  height: 100%;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: inherit;
-  /* inherit white from parent */
+  flex-shrink: 0 !important;
 }
 
 .watchNode span {
   font-weight: 600 !important;
+  font-size: 14px !important;
+}
+
+/* Player name under pitch icon (only when label is present); color/background from PlayerNode inline */
+.watchNode > div:last-child:not(:first-child) {
+  margin-top: 5px !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  text-shadow: none !important;
+  max-width: 56px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
 }
 
 .pitchContainer {
   position: relative;
   width: 100%;
   aspect-ratio: 105 / 68;
-  border: 2px solid rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
   transform: translate(-50%, -50%) !important;
   z-index: 2 !important;
   transition: transform 0.12s ease !important;
@@ -725,7 +990,7 @@
 .pitchLines {
   position: absolute;
   inset: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 
@@ -737,7 +1002,7 @@
   bottom: 0;
   left: 50%;
   width: 2px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0, 0, 0, 0.35);
   transform: translateX(-50%);
 }
 
@@ -747,7 +1012,7 @@
   position: absolute;
   width: 120px;
   height: 120px;
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(0, 0, 0, 0.35);
   border-radius: 50%;
   top: 50%;
   left: 50%;
@@ -786,6 +1051,90 @@
   animation: slideUp 0.2s ease-out;
 }
 
+/* Formation change modal: larger for editing + drag-drop preview */
+.modalContentFormation {
+  width: 80vw;
+  max-width: 80vw;
+  height: 80vh;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.formationModalBody {
+  flex: 1;
+  min-height: 0;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  overflow: auto;
+}
+
+.formationPreviewRow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  min-height: 0;
+}
+
+@media (min-width: 640px) {
+  .formationPreviewRow {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.formationPreviewSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.swapPreviewPanel {
+  flex-shrink: 0;
+  padding: var(--spacing-md);
+  background: var(--color-bg-sub, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  min-width: 180px;
+}
+
+.swapPreviewRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.swapPreviewRow:last-child {
+  margin-bottom: 0;
+}
+
+.swapPreviewLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-sub, #64748b);
+  text-transform: uppercase;
+}
+
+.swapPreviewValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.formationModalBody .formationPreviewLarge {
+  width: 100%;
+  max-width: min(calc(70vh * 105 / 68), 90%);
+  aspect-ratio: 105 / 68;
+  margin: 0 auto;
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
@@ -803,16 +1152,51 @@
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   background: var(--color-bg-sub);
 }
 
-.modalHeader h3 {
-  margin: 0;
-  font-size: 1.1rem;
+.modalHeaderTitleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-/* ... */
+.modalHeaderTeamName {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-sub, #64748b);
+}
+
+.modalHeaderPlayerLine {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.modalHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.headerSubstituteBtn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-sub, #64748b);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.headerSubstituteBtn:hover {
+  color: var(--color-primary, #2563eb);
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .closeBtn {
   background: none;
   border: none;
@@ -821,6 +1205,95 @@
   padding: 0;
   line-height: 1;
   color: var(--color-text-sub);
+}
+
+/* Team color modal: same palette as Match Info */
+.teamColorSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.teamColorSwatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-card);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.teamColorSwatch:hover {
+  transform: scale(1.1);
+  border-color: var(--color-text-sub);
+}
+
+.teamColorSwatch[aria-selected="true"] {
+  border-color: var(--color-primary);
+  border-width: 3px;
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.teamColorSwatchWhite {
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.teamColorSwatchWhite[aria-selected="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+.qualityRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 0 var(--spacing-md);
+  margin-top: 14px;
+  margin-bottom: var(--spacing-sm);
+}
+
+.qualityToggle {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.qualityToggle .stampBtn {
+  padding: 8px 14px;
+}
+
+.qualityBtnGood {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.qualityBtnGood:hover {
+  background: #dcfce7 !important;
+}
+
+.qualityBtnGood.activeStamp {
+  background: #dcfce7 !important;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.qualityBtnBad {
+  background: #fef2f2 !important;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.qualityBtnBad:hover {
+  background: #fee2e2 !important;
+}
+
+.qualityBtnBad.activeStamp {
+  background: #fee2e2 !important;
+  border-color: #ef4444;
+  color: #991b1b;
 }
 
 .stampGrid {
@@ -927,6 +1400,257 @@
 .saveBtn:disabled {
   background: #ccc;
   cursor: not-allowed;
+}
+
+/* Time edit modal: scroll picker (wheel-style) */
+.timeEditModalContent {
+  max-width: 360px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  overflow: hidden;
+}
+
+.timeEditBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.timeEditPreview {
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  text-align: center;
+  letter-spacing: 0.05em;
+  color: var(--color-text-main);
+}
+
+.timePickerColumns {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+}
+
+.timePickerColumn {
+  flex: 1;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.timePickerLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-sub);
+  text-align: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.timePickerShadowTop {
+  height: 48px;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.98), transparent);
+  pointer-events: none;
+}
+
+.timePickerShadowBottom {
+  height: 48px;
+  flex-shrink: 0;
+  background: linear-gradient(to top, rgba(255,255,255,0.98), transparent);
+  pointer-events: none;
+}
+
+.timePickerScroll {
+  flex: 1;
+  min-height: 240px;
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timePickerScroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.timePickerScroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.timePickerPadding {
+  height: 96px;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+}
+
+.timePickerRow {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-sub);
+  scroll-snap-align: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  border-radius: 8px;
+}
+
+.timePickerRow:hover {
+  background: var(--color-bg-sub);
+  color: var(--color-text-main);
+}
+
+.timePickerRowSelected {
+  color: var(--color-text-main);
+  background: rgba(37, 99, 235, 0.12);
+  font-weight: 700;
+}
+
+/* Substitution modal: compact, scrollable list only */
+.modalContentSubstitution {
+  width: 80%;
+  max-width: 650px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modalContentSubstitution .modalHeader {
+  flex-shrink: 0;
+}
+
+.modalContentSubstitution .substitutionBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.substitutionSectionScrollable {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.benchListScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modalContentSubstitution .benchList {
+  max-height: none;
+}
+
+/* Substitution modal */
+.substitutionBody {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.substitutionSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.substitutionSectionTitle {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-sub);
+}
+
+.substitutionOut {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-bg-sub);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.substitutionPlayer {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.substitutionUnknown {
+  color: var(--color-text-sub);
+}
+
+.substitutionIn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.addPlayerInSubBtn {
+  margin-top: var(--spacing-sm);
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-primary, #2563eb);
+  background: rgba(0, 0, 0, 0.05);
+  border: 2px dashed #bbb;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.addPlayerInSubBtn:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--color-primary, #2563eb);
+}
+
+.substitutionConfirm {
+  padding: var(--spacing-md);
+  background: var(--color-bg-sub);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.substitutionConfirmText {
+  margin: 0 0 var(--spacing-md);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.substitutionConfirmActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.benchRowSelected {
+  border-color: var(--color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 /* Bench Modal Helpers */

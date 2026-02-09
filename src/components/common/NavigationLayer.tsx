@@ -6,8 +6,9 @@ export function NavigationLayer() {
   const location = useLocation();
 
   const isHome = location.pathname === '/';
+  const isWatchMode = /^\/match\/[^/]+\/watch$/.test(location.pathname);
 
-  if (isHome) return null;
+  if (isHome || isWatchMode) return null;
 
   return (
     <div className={styles.navigationLayer}>

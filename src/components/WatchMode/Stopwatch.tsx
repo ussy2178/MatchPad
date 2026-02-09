@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { db, type TimerState } from '../../db/db';
+import { TimeEditModal } from './TimeEditModal';
 import styles from './WatchMode.module.css';
 
 interface StopwatchProps {
@@ -15,7 +16,7 @@ interface StopwatchProps {
 }
 
 export function Stopwatch({ matchId, initialState, compact = false, persistToDb = true, syncTimeRef, syncTimerStateRef }: StopwatchProps) {
-  // Local state for display
+  const [timeEditOpen, setTimeEditOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [state, setState] = useState<TimerState>(initialState || {
     phase: '1H',
@@ -118,13 +119,34 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
     }
   };
 
+  const handleApplyTimeEdit = (totalMs: number) => {
+    saveState({
+      ...state,
+      elapsedMs: totalMs,
+      startedAtMs: state.running ? Date.now() : null,
+    });
+    setNow(Date.now());
+    setTimeEditOpen(false);
+  };
+
   if (compact) {
     return (
-      <div className={styles.compactStopwatch}>
-        <div className={styles.compactPhase} onClick={togglePhase} title="Click to toggle phase">
-          {state.phase}
-        </div>
-        <span className={styles.compactTimer}>{timeString}</span>
+      <>
+        <div className={styles.compactStopwatch}>
+          <div className={styles.compactPhase} onClick={togglePhase} title="Click to toggle phase">
+            {state.phase}
+          </div>
+          <span
+            className={styles.compactTimer}
+            onClick={() => setTimeEditOpen(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTimeEditOpen(true); } }}
+            title="Click to edit time"
+            style={{ cursor: 'pointer' }}
+          >
+            {timeString}
+          </span>
 
         <div className={styles.compactControls}>
           <button
@@ -143,6 +165,13 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
           </button>
         </div>
       </div>
+      <TimeEditModal
+        isOpen={timeEditOpen}
+        currentMs={totalMs}
+        onApply={handleApplyTimeEdit}
+        onClose={() => setTimeEditOpen(false)}
+      />
+    </>
     );
   }
 
@@ -153,7 +182,17 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
         <div className={styles.phaseBadge} onClick={togglePhase} title="Click to toggle phase">
           {getPhaseLabel(state.phase)}
         </div>
-        <span className={styles.timerDigits}>{timeString}</span>
+        <span
+          className={styles.timerDigits}
+          onClick={() => setTimeEditOpen(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setTimeEditOpen(true); } }}
+          title="Click to edit time"
+          style={{ cursor: 'pointer' }}
+        >
+          {timeString}
+        </span>
       </div>
 
       {/* Controls */}
@@ -169,6 +208,12 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
           ⟲
         </button>
       </div>
+      <TimeEditModal
+        isOpen={timeEditOpen}
+        currentMs={totalMs}
+        onApply={handleApplyTimeEdit}
+        onClose={() => setTimeEditOpen(false)}
+      />
     </div>
   );
 }

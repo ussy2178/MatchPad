@@ -6,14 +6,16 @@ interface PitchProps {
   formation: { positions: readonly { id: number; x: number; y: number; label: string }[] };
   lineup: { [key: number]: string };
   players: Player[];
-  onNodeClick?: (index: number) => void;
+  onNodeClick?: (slotId: number) => void;
   selectedNodeIndex?: number | null;
   readOnly?: boolean;
   showName?: boolean;
   mirror?: boolean;
+  /** When provided, slot hover is reported for swap preview (Target). */
+  onSlotHover?: (slotId: number | null) => void;
 }
 
-export function Pitch({ formation, lineup, players, onNodeClick, selectedNodeIndex, readOnly, showName = true, mirror }: PitchProps) {
+export function Pitch({ formation, lineup, players, onNodeClick, selectedNodeIndex, readOnly, showName = true, mirror, onSlotHover }: PitchProps) {
   return (
     <div className={styles.pitchContainer}>
       <div className={styles.pitch}>
@@ -43,6 +45,8 @@ export function Pitch({ formation, lineup, players, onNodeClick, selectedNodeInd
                 isSelected={isSelected}
                 showName={showName}
                 mirror={mirror}
+                onMouseEnter={onSlotHover ? () => onSlotHover(pos.id) : undefined}
+                onMouseLeave={onSlotHover ? () => onSlotHover(null) : undefined}
               />
             );
           })}

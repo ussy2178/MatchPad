@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import { useLiveQuery } from 'dexie-react-hooks'; // Unused
 import { db, type Match } from '../../db/db';
@@ -38,6 +38,19 @@ const getSmartKickoffTime = () => {
   return `${targetHour.toString().padStart(2, '0')}:${targetMin.toString().padStart(2, '0')}`;
 };
 
+/** Preset colors for per-match team selection. */
+export const PRESET_MATCH_COLORS: { hex: string; label: string }[] = [
+  { hex: '#dc2626', label: 'Red' },
+  { hex: '#2563eb', label: 'Blue' },
+  { hex: '#15803d', label: 'Dark green' },
+  { hex: '#eab308', label: 'Yellow' },
+  { hex: '#0ea5e9', label: 'Light blue' },
+  { hex: '#7c3aed', label: 'Purple' },
+  { hex: '#ea580c', label: 'Orange' },
+  { hex: '#171717', label: 'Black' },
+  { hex: '#ffffff', label: 'White' },
+];
+
 // Default initial state
 const INITIAL_MATCH: Partial<Match> = {
   date: new Date(),
@@ -59,6 +72,9 @@ export function MatchCreationWizard() {
     homeTeamId: 'kashima-antlers', // Default
     awayTeamId: 'urawa-reds', // Default
   });
+  const [openColorPicker, setOpenColorPicker] = useState<'home' | 'away' | null>(null);
+  const homeColorPopoverRef = useRef<HTMLDivElement>(null);
+  const awayColorPopoverRef = useRef<HTMLDivElement>(null);
 
   // Computed
   const homeTeam = teams?.find(t => t.id === matchData.homeTeamId);
@@ -71,6 +87,20 @@ export function MatchCreationWizard() {
   useEffect(() => {
     debugTeamStorage();
   }, []);
+
+  // Close color picker when clicking outside
+  useEffect(() => {
+    if (openColorPicker === null) return;
+    const handleClick = (e: MouseEvent) => {
+      const homeEl = homeColorPopoverRef.current;
+      const awayEl = awayColorPopoverRef.current;
+      const target = e.target as Node;
+      if (openColorPicker === 'home' && homeEl && !homeEl.contains(target)) setOpenColorPicker(null);
+      if (openColorPicker === 'away' && awayEl && !awayEl.contains(target)) setOpenColorPicker(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openColorPicker]);
 
   const handleUpdate = (updates: Partial<Match>) => {
     setMatchData(prev => ({ ...prev, ...updates }));
@@ -90,6 +120,8 @@ export function MatchCreationWizard() {
         awayFormation: matchData.awayFormation!,
         homeLineup: matchData.homeLineup!,
         awayLineup: matchData.awayLineup!,
+        homeTeamColor: matchData.homeTeamColor,
+        awayTeamColor: matchData.awayTeamColor,
       };
 
       await db.matches.add(newMatch);
@@ -140,6 +172,49 @@ export function MatchCreationWizard() {
               {homeTeam.logoPath && <img src={homeTeam.logoPath} className={styles.teamLogoOnly} onError={(e) => e.currentTarget.style.display = 'none'} />}
             </div>
           )}
+          <div className={styles.colorPickerWrap} ref={homeColorPopoverRef}>
+            <button
+              type="button"
+              className={styles.colorPickerTrigger}
+              onClick={() => setOpenColorPicker(openColorPicker === 'home' ? null : 'home')}
+              aria-expanded={openColorPicker === 'home'}
+              aria-haspopup="listbox"
+              aria-label="Home team marker color"
+            >
+              <span className={styles.colorPickerLabel}>Team color</span>
+              {matchData.homeTeamColor ? (
+                <span
+                  className={matchData.homeTeamColor.toLowerCase() === '#ffffff' ? `${styles.colorChip} ${styles.colorChipWhite}` : styles.colorChip}
+                  style={{ backgroundColor: matchData.homeTeamColor }}
+                  aria-hidden
+                />
+              ) : (
+                <>
+                  <span className={styles.colorChipEmpty} aria-hidden />
+                  <span className={styles.colorPickerPlaceholder}>Select color</span>
+                </>
+              )}
+            </button>
+            {openColorPicker === 'home' && (
+              <div className={styles.colorPopover} role="listbox" aria-label="Home team color">
+                {PRESET_MATCH_COLORS.map(({ hex, label }) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    role="option"
+                    aria-selected={matchData.homeTeamColor === hex}
+                    className={hex.toLowerCase() === '#ffffff' ? `${styles.colorSwatch} ${styles.colorSwatchWhite}` : styles.colorSwatch}
+                    style={{ backgroundColor: hex }}
+                    title={label}
+                    onClick={() => {
+                      handleUpdate({ homeTeamColor: hex });
+                      setOpenColorPicker(null);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className={styles.formGroup}>
@@ -156,6 +231,49 @@ export function MatchCreationWizard() {
               {awayTeam.logoPath && <img src={awayTeam.logoPath} className={styles.teamLogoOnly} onError={(e) => e.currentTarget.style.display = 'none'} />}
             </div>
           )}
+          <div className={styles.colorPickerWrap} ref={awayColorPopoverRef}>
+            <button
+              type="button"
+              className={styles.colorPickerTrigger}
+              onClick={() => setOpenColorPicker(openColorPicker === 'away' ? null : 'away')}
+              aria-expanded={openColorPicker === 'away'}
+              aria-haspopup="listbox"
+              aria-label="Away team marker color"
+            >
+              <span className={styles.colorPickerLabel}>Team color</span>
+              {matchData.awayTeamColor ? (
+                <span
+                  className={matchData.awayTeamColor.toLowerCase() === '#ffffff' ? `${styles.colorChip} ${styles.colorChipWhite}` : styles.colorChip}
+                  style={{ backgroundColor: matchData.awayTeamColor }}
+                  aria-hidden
+                />
+              ) : (
+                <>
+                  <span className={styles.colorChipEmpty} aria-hidden />
+                  <span className={styles.colorPickerPlaceholder}>Select color</span>
+                </>
+              )}
+            </button>
+            {openColorPicker === 'away' && (
+              <div className={styles.colorPopover} role="listbox" aria-label="Away team color">
+                {PRESET_MATCH_COLORS.map(({ hex, label }) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    role="option"
+                    aria-selected={matchData.awayTeamColor === hex}
+                    className={hex.toLowerCase() === '#ffffff' ? `${styles.colorSwatch} ${styles.colorSwatchWhite}` : styles.colorSwatch}
+                    style={{ backgroundColor: hex }}
+                    title={label}
+                    onClick={() => {
+                      handleUpdate({ awayTeamColor: hex });
+                      setOpenColorPicker(null);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

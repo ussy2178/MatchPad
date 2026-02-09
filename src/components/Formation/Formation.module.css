@@ -153,15 +153,14 @@
 
 .pitchContainer {
   width: 100%;
-  height: 100%;
-  /* Fill pitchCard */
+  max-width: 900px;
+  aspect-ratio: 4 / 3;
   position: relative;
-  background-color: #2e7d32;
+  background-color: #ffffff;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: none;
-  /* Moved shadow to card */
-  /* Touch target spacing handled by scale */
+  border: 1px solid #e5e7eb;
 }
 
 .pitch {
@@ -174,13 +173,11 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.5;
 }
 
 .pitchLines div {
   position: absolute;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  /* Thinner lines */
+  border: 1px solid rgba(0, 0, 0, 0.35);
 }
 
 .centerCircle {
@@ -196,7 +193,7 @@
   top: 50%;
   left: 0;
   width: 100%;
-  border-top: 1px solid rgba(255, 255, 255, 0.7);
+  border-top: 1px solid rgba(0, 0, 0, 0.35);
 }
 
 .penaltyAreaTop {
@@ -237,6 +234,17 @@
   z-index: 10;
 }
 
+/* Drop zone for slot-to-slot swap (formation editor); behind player nodes */
+.slotDropZone {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 52px;
+  margin: -28px 0 0 -28px;
+  z-index: 4;
+  pointer-events: auto;
+}
+
 /* Player Node */
 .playerNode {
   position: absolute;
@@ -267,7 +275,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border: 2px solid white;
+  /* Border set via inline style (teamColor) in PlayerNode */
   transition: all 0.2s;
 }
 
@@ -281,23 +289,18 @@
 }
 
 .nodeCircle.filled {
-  background-color: var(--color-primary);
-  /* Team color */
-  color: white;
-  border-color: white;
+  background-color: #ffffff;
+  color: #111827;
 }
 
 /* Remove dashed placeholder styling */
 .nodeCircle.empty {
-  background-color: rgba(255, 255, 255, 0.4);
-  border-style: solid;
-  /* was dashed */
-  border-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(0, 0, 0, 0.06);
 }
 
 .plusIcon {
   font-size: 1.2rem;
-  color: white;
+  color: #374151;
   font-weight: bold;
 }
 
@@ -310,9 +313,9 @@
   margin-top: 4px;
   font-size: 0.8rem;
   font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  background: rgba(0, 0, 0, 0.5);
+  color: #111827;
+  text-shadow: none;
+  background: transparent;
   padding: 2px 8px;
   border-radius: 12px;
   white-space: nowrap;
@@ -427,4 +430,33 @@
   text-align: center;
   padding: var(--spacing-lg);
   font-style: italic;
+}
+
+/* FormationPreview - compact read-only pitch */
+.formationPreview {
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 105 / 68;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.formationPreview .pitchContainer {
+  width: 100%;
+  height: 100%;
+}
+
+.formationPreview .playerNode {
+  width: 36px;
+}
+
+.formationPreview .nodeCircle {
+  width: 28px;
+  height: 28px;
+  font-size: 0.75rem;
+}
+
+.formationPreview .nodeLabel {
+  font-size: 0.6rem;
 }

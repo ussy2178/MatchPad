@@ -8,18 +8,28 @@ export interface SquadAccordionProps {
   onPlayerClick: (playerId: string) => void;
   expanded: boolean;
   onToggle: () => void;
+  /** When true, list is always expanded and header is not clickable */
+  alwaysExpanded?: boolean;
+  /** Team color for squad footer tint */
+  teamColor?: string;
 }
 
-export function SquadAccordion({ side, players, lineup, onPlayerClick, expanded, onToggle }: SquadAccordionProps) {
+export function SquadAccordion({ side, players, lineup, onPlayerClick, expanded, onToggle, alwaysExpanded, teamColor }: SquadAccordionProps) {
   const label = side === 'home' ? 'Home Squad' : 'Away Squad';
+  const isExpanded = alwaysExpanded || expanded;
 
   return (
     <div className={styles.accordionSection}>
-      <div className={styles.accordionHeader} onClick={onToggle}>
-        <span>{label}</span>
-        <span className={`${styles.chevron} ${expanded ? styles.expanded : ''}`}>▼</span>
-      </div>
-      <div className={`${styles.accordionContent} ${expanded ? styles.expanded : ''}`}>
+      {!alwaysExpanded && (
+        <div
+          className={`${styles.accordionHeader} ${alwaysExpanded ? styles.accordionHeaderStatic : ''}`}
+          onClick={onToggle}
+        >
+          <span>{label}</span>
+          <span className={`${styles.chevron} ${expanded ? styles.expanded : ''}`}>▼</span>
+        </div>
+      )}
+      <div className={`${styles.accordionContent} ${isExpanded ? styles.expanded : ''}`}>
         <div className={styles.playerList}>
           {players.map(p => {
             const isStarter = Object.values(lineup).includes(p.id);
@@ -32,6 +42,12 @@ export function SquadAccordion({ side, players, lineup, onPlayerClick, expanded,
             );
           })}
         </div>
+        {teamColor && (
+          <div
+            className={styles.squadFooter}
+            style={{ ['--squad-team-color' as string]: teamColor }}
+          />
+        )}
       </div>
     </div>
   );

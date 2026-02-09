@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { StampQuality } from '../../types/match';
 import styles from './WatchMode.module.css';
 
 type StampType = 'pass' | 'shot' | 'defense' | 'dribble' | 'cross' | 'movement' | 'positioning' | 'running' | 'save' | 'foul';
@@ -6,9 +7,13 @@ type StampType = 'pass' | 'shot' | 'defense' | 'dribble' | 'cross' | 'movement' 
 interface PlayerActionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (type: string, subType: string | null, comment?: string) => Promise<void> | void;
+  onSave: (type: string, subType: string | null, comment?: string, quality?: StampQuality) => Promise<void> | void;
   playerInfo: { team: 'home' | 'away'; number: number } | null;
+  /** Actual team name for the title (e.g. "鹿島アントラーズ"). */
+  teamName?: string;
   playerName?: string;
+  /** When provided, shows "選手交代" in the header. Clicking it triggers substitution flow and closes this modal. */
+  onSubstituteClick?: () => void;
 }
 
 const STAMP_DEFINITIONS: { type: StampType; label: string; category: 'attack' | 'defense' | 'other' }[] = [
@@ -22,15 +27,16 @@ const STAMP_DEFINITIONS: { type: StampType; label: string; category: 'attack' | 
   { type: 'running', label: 'ランニング', category: 'other' },
 ];
 
-export function PlayerActionModal({ isOpen, onClose, onSave, playerInfo, playerName }: PlayerActionModalProps) {
+export function PlayerActionModal({ isOpen, onClose, onSave, playerInfo, teamName, playerName, onSubstituteClick }: PlayerActionModalProps) {
   const [selectedStamp, setSelectedStamp] = useState<StampType | null>(null);
   const [comment, setComment] = useState('');
+  const [quality, setQuality] = useState<StampQuality>('good');
 
-  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedStamp(null);
       setComment('');
+      setQuality('good');
     }
   }, [isOpen]);
 
@@ -38,8 +44,7 @@ export function PlayerActionModal({ isOpen, onClose, onSave, playerInfo, playerN
 
   const handleSave = () => {
     if (selectedStamp) {
-      // Use 'Stamp' as primary type, and the selectedStamp as subtype
-      onSave('Stamp', selectedStamp, comment);
+      onSave('Stamp', selectedStamp, comment, quality);
       onClose();
     }
   };
@@ -48,13 +53,45 @@ export function PlayerActionModal({ isOpen, onClose, onSave, playerInfo, playerN
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <div>
-            <h3>
-              {playerInfo.team === 'home' ? 'HOME' : 'AWAY'} #{playerInfo.number}
-            </h3>
-            {playerName && <div style={{ fontSize: '0.9rem', color: '#666' }}>{playerName}</div>}
+          <div className={styles.modalHeaderTitleBlock}>
+            <div className={styles.modalHeaderTeamName}>
+              {teamName ?? (playerInfo.team === 'home' ? 'HOME' : 'AWAY')}
+            </div>
+            <div className={styles.modalHeaderPlayerLine}>
+              #{playerInfo.number}{playerName ? ` ${playerName}` : ''}
+            </div>
           </div>
-          <button className={styles.closeBtn} onClick={onClose}>&times;</button>
+          <div className={styles.modalHeaderActions}>
+            {onSubstituteClick && (
+              <button
+                type="button"
+                className={styles.headerSubstituteBtn}
+                onClick={() => { onSubstituteClick(); onClose(); }}
+              >
+                選手交代
+              </button>
+            )}
+            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">&times;</button>
+          </div>
+        </div>
+
+        <div className={styles.qualityRow}>
+          <div className={styles.qualityToggle}>
+            <button
+              type="button"
+              className={`${styles.stampBtn} ${styles.qualityBtnGood} ${quality === 'good' ? styles.activeStamp : ''}`}
+              onClick={() => setQuality('good')}
+            >
+              Good
+            </button>
+            <button
+              type="button"
+              className={`${styles.stampBtn} ${styles.qualityBtnBad} ${quality === 'bad' ? styles.activeStamp : ''}`}
+              onClick={() => setQuality('bad')}
+            >
+              Bad
+            </button>
+          </div>
         </div>
 
         <div className={styles.stampGrid}>

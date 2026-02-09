@@ -1,6 +1,7 @@
 import { backupMatchToSupabase } from '../services/supabaseBackup';
 import { type Team, type Player, type TimerState } from '../db/db';
 import type { MatchEvent } from '../types/match';
+import { isSubstitutionEvent, isFormationChangeEvent } from '../types/match';
 
 export type { MatchEvent };
 
@@ -21,12 +22,22 @@ export interface WatchModeState {
   awayTeam: Team;
   homePlayers: Player[];
   awayPlayers: Player[];
+  /** Initial/starting lineups (source for replay). */
+  initialHomeLineup?: { [key: number]: string };
+  initialAwayLineup?: { [key: number]: string };
+  /** Current lineups (for backward compat; prefer computing from initial + events). */
   homeLineup: { [key: number]: string };
   awayLineup: { [key: number]: string };
+  /** Optional bench player IDs. If empty/absent, substitutions can select from any non-active team player. */
+  homeBench?: string[];
+  awayBench?: string[];
   homeFormation: string;
   awayFormation: string;
   timerState?: TimerState;
   events: MatchEvent[];
+  /** Per-match team colors (player marker border). */
+  homeTeamColor?: string;
+  awayTeamColor?: string;
 }
 
 export interface MatchNotes {
@@ -48,6 +59,81 @@ export interface MatchRecord {
 }
 
 const STORAGE_KEY = 'savedMatches';
+
+/** Active players on pitch = current lineup values. */
+export function getActivePlayerIds(lineup: { [key: number]: string }): string[] {
+  return Object.values(lineup).filter(Boolean);
+}
+
+/**
+ * Compute current lineup from initial lineup and match events (replay substitution and formation change events in order).
+ * Pure function: does not mutate inputs. Deleting a substitution event and recomputing restores the previous player.
+ */
+export function computeLineupFromEvents(
+  initialLineup: { [key: number]: string },
+  events: MatchEvent[],
+  team: 'home' | 'away'
+): { [key: number]: string } {
+  const teamEvents = events
+    .filter(ev => (isSubstitutionEvent(ev) && ev.team === team) || (isFormationChangeEvent(ev) && ev.team === team))
+    .slice()
+    .sort((a, b) => a.time - b.time);
+
+  let lineup = { ...initialLineup };
+  for (const ev of teamEvents) {
+    if (isSubstitutionEvent(ev) && ev.playerInId != null && ev.playerOutId != null) {
+      const posKey = Object.keys(lineup).find(k => lineup[Number(k)] === ev.playerOutId);
+      if (posKey != null) {
+        lineup = { ...lineup, [Number(posKey)]: ev.playerInId };
+        // eslint-disable-next-line no-console
+        console.log('[computeLineupFromEvents] applied sub: pos', posKey, 'out:', ev.playerOutId, 'in:', ev.playerInId, 'lineup:', lineup);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('[computeLineupFromEvents] outgoing player not found in lineup:', ev.playerOutId, 'lineup:', lineup);
+      }
+    } else if (isFormationChangeEvent(ev)) {
+      lineup = { ...ev.lineupSnapshot };
+    }
+  }
+  return lineup;
+}
+
+/**
+ * Compute current formation from initial formation and formation change events.
+ */
+export function computeFormationFromEvents(
+  initialFormation: string,
+  events: MatchEvent[],
+  team: 'home' | 'away'
+): string {
+  const formationChanges = events
+    .filter(ev => isFormationChangeEvent(ev) && ev.team === team)
+    .slice()
+    .sort((a, b) => a.time - b.time);
+  if (formationChanges.length === 0) return initialFormation;
+  return formationChanges[formationChanges.length - 1].toFormation;
+}
+
+/**
+ * Players eligible to be selected as substitutes (to come on).
+ * - Active players (on pitch) are never eligible.
+ * - If bench is provided and non-empty: only those bench players not currently on pitch.
+ * - If bench is absent or empty: all team players not currently on pitch.
+ */
+export function getEligibleSubstitutes(
+  teamPlayers: Player[],
+  lineup: { [key: number]: string },
+  bench?: string[]
+): Player[] {
+  const activeIds = getActivePlayerIds(lineup);
+  const notActive = (p: Player) => !activeIds.includes(p.id);
+
+  if (bench && bench.length > 0) {
+    const benchSet = new Set(bench);
+    return teamPlayers.filter(p => benchSet.has(p.id) && notActive(p));
+  }
+  return teamPlayers.filter(notActive);
+}
 
 export function getSavedMatches(): MatchRecord[] {
   try {

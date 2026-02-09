@@ -134,6 +134,139 @@
   object-fit: contain;
 }
 
+/* Per-match team color: trigger + popover (hidden by default) */
+.colorPickerWrap {
+  position: relative;
+}
+
+.colorPickerTrigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-sub);
+  background: none;
+  border: none;
+  padding: 8px 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+  min-height: 36px;
+}
+
+.colorPickerTrigger:hover {
+  color: var(--color-primary);
+}
+
+.colorPickerTrigger[aria-expanded="true"] {
+  color: var(--color-primary);
+}
+
+.colorPickerLabel {
+  flex: 0 0 auto;
+}
+
+/* Selected color chip next to label (16–20px) */
+.colorChip {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.colorChipWhite {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.colorChipEmpty {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(0, 0, 0, 0.18);
+  background: transparent;
+}
+
+.colorPickerPlaceholder {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-sub);
+  opacity: 0.85;
+}
+
+.colorPopover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  padding: 10px;
+  background: white;
+  border: 1px solid var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  z-index: 100;
+  min-width: 0;
+}
+
+.colorSwatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--color-bg-card);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.colorSwatch:hover {
+  transform: scale(1.1);
+  border-color: var(--color-text-sub);
+}
+
+.colorSwatch[aria-selected="true"] {
+  border-color: var(--color-primary);
+  border-width: 3px;
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.colorSwatchWhite {
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.colorSwatchWhite[aria-selected="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .colorPickerTrigger {
+    min-height: 40px;
+    padding: 10px 0;
+  }
+  .colorChip,
+  .colorChipEmpty {
+    width: 20px;
+    height: 20px;
+  }
+  .colorPopover {
+    padding: 8px;
+    gap: 6px;
+  }
+  .colorSwatch {
+    width: 26px;
+    height: 26px;
+  }
+}
+
 /* Step 2: Unified Lineup */
 .unifiedContainer {
   display: flex;

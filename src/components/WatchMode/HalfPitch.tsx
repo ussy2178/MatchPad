@@ -4,6 +4,7 @@
 // Better to use WatchMode.module.css class mapping.
 import watchStyles from './WatchMode.module.css';
 import { PlayerNode } from '../Formation/PlayerNode';
+import { useMatchContext } from '../../contexts/MatchContext';
 import type { Player } from '../../db/db';
 
 interface HalfPitchProps {
@@ -12,7 +13,11 @@ interface HalfPitchProps {
   lineup: { [key: number]: string };
   players: Player[];
   onNodeClick: (playerId: string) => void;
+  /** When an empty slot (+) is clicked. Omit to disable assignment from empty slots. */
+  onEmptySlotClick?: (slotId: number) => void;
   showNames?: boolean;
+  /** Team primary color for player marker border. */
+  primaryColor?: string;
 }
 
 export function HalfPitch({
@@ -21,8 +26,23 @@ export function HalfPitch({
   lineup,
   players,
   onNodeClick,
-  showNames = false
+  onEmptySlotClick,
+  showNames = false,
+  primaryColor,
 }: HalfPitchProps) {
+  const matchContext = useMatchContext();
+  const teamColor =
+    matchContext != null
+      ? side === 'home'
+        ? matchContext.homeTeamColor
+        : matchContext.awayTeamColor
+      : primaryColor;
+
+  // Debug: ensure component always mounts (no early return on missing formation/lineup)
+  // if (!formation) return null;
+  // if (!lineup) return null;
+  // eslint-disable-next-line no-console
+  console.log('HalfPitch render', side, !!formation, !!lineup, formation?.positions?.length);
 
   // Mapping Logic:
   // Standard Formation (Vertical): x (0-100 width), y (0-100 depth).
@@ -92,14 +112,17 @@ export function HalfPitch({
             position={mapped}
             player={player}
             onClick={() => {
-              if (!playerId) return;
-              console.log("HalfPitch click:", playerId);
-              onNodeClick(playerId);
+              if (playerId) {
+                onNodeClick(playerId);
+              } else if (onEmptySlotClick) {
+                onEmptySlotClick(pos.id);
+              }
             }}
             isSelected={false}
             showName={showNames}
             mirror={false}
             className={watchStyles.watchNode}
+            teamColor={teamColor}
           />
         );
       })}
