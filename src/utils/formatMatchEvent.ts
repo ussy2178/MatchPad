@@ -3,6 +3,7 @@ import { isFormationChangeEvent } from '../types/match';
 
 const STAMP_LABELS: Record<string, string> = {
   pass: 'パス',
+  trap: 'トラップ',
   shot: 'シュート',
   dribble: 'ドリブル',
   cross: 'クロス',

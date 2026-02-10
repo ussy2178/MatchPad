@@ -534,6 +534,10 @@
   border-radius: 6px;
   border: 1px solid var(--color-border);
   font-size: 0.95rem;
+  cursor: pointer;
+}
+.eventItem:hover {
+  background: var(--color-bg-sub, #f8fafc);
 }
 
 .eventTime {

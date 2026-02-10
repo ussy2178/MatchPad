@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { StampQuality } from '../../types/match';
 import styles from './WatchMode.module.css';
 
-type StampType = 'pass' | 'shot' | 'defense' | 'dribble' | 'cross' | 'movement' | 'positioning' | 'running' | 'save' | 'foul';
+type StampType = 'pass' | 'trap' | 'shot' | 'defense' | 'dribble' | 'cross' | 'movement' | 'positioning' | 'running' | 'save' | 'foul';
 
 interface PlayerActionModalProps {
   isOpen: boolean;
@@ -18,8 +18,9 @@ interface PlayerActionModalProps {
 
 const STAMP_DEFINITIONS: { type: StampType; label: string; category: 'attack' | 'defense' | 'other' }[] = [
   { type: 'pass', label: 'パス', category: 'attack' },
-  { type: 'shot', label: 'シュート', category: 'attack' },
+  { type: 'trap', label: 'トラップ', category: 'attack' },
   { type: 'dribble', label: 'ドリブル', category: 'attack' },
+  { type: 'shot', label: 'シュート', category: 'attack' },
   { type: 'cross', label: 'クロス', category: 'attack' },
   { type: 'defense', label: 'ディフェンス', category: 'defense' },
   { type: 'save', label: 'セーブ', category: 'defense' },

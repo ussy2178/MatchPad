@@ -10,6 +10,7 @@ import { GoalModal } from './GoalModal';
 import { TeamStampModal } from './TeamStampModal';
 import { FormationChangeModal } from './FormationChangeModal';
 import { NotesModal } from './NotesModal';
+import { EventDetailModal } from './EventDetailModal';
 import { TeamColorModal } from './TeamColorModal';
 import { PlayerSelectionModal } from './PlayerSelectionModal';
 import { SquadAccordion } from './SquadAccordion';
@@ -65,6 +66,7 @@ export function WatchMode() {
 
   // Local state for events (No persistence required)
   const [localEvents, setLocalEvents] = useState<MatchEvent[]>([]);
+  const [eventDetailEvent, setEventDetailEvent] = useState<MatchEvent | null>(null);
 
   // Lineup state - updated on substitution to reflect on-field players
   const [homeLineupState, setHomeLineupState] = useState<{ [key: number]: string }>({});
@@ -443,6 +445,10 @@ export function WatchMode() {
     setLocalEvents(prev => prev.filter(ev => ev.id !== id));
   };
 
+  const handleUpdateEvent = (updatedEvent: MatchEvent) => {
+    setLocalEvents(prev => prev.map(ev => (ev.id === updatedEvent.id ? updatedEvent : ev)));
+  };
+
   // Helper to filter active players
   const getActivePlayers = (teamPlayers: Player[], lineup: { [key: number]: string }) => {
     const activeIds = Object.values(lineup);
@@ -732,7 +738,14 @@ export function WatchMode() {
                 const showTeamName = isTeamEvent || ev.type === 'FORMATION_CHANGE';
 
                 return (
-                  <div key={ev.id} className={styles.eventItem}>
+                  <div
+                    key={ev.id}
+                    className={styles.eventItem}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setEventDetailEvent(ev)}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEventDetailEvent(ev); } }}
+                  >
                     <span className={styles.eventTime}>[{timeStr}]</span>
                     {showTeamName ? (
                       <>
@@ -764,8 +777,9 @@ export function WatchMode() {
                       {formatted}
                     </span>
                     <button
+                      type="button"
                       className={styles.deleteBtn}
-                      onClick={() => handleDeleteEvent(ev.id)}
+                      onClick={e => { e.stopPropagation(); handleDeleteEvent(ev.id); }}
                       title="Delete Event"
                     >
                       ×
@@ -792,6 +806,18 @@ export function WatchMode() {
         teamName={actionPlayerId ? (homePlayers.some(p => p.id === actionPlayerId) ? homeTeam?.name : awayTeam?.name) : undefined}
         playerName={actionPlayerId ? getPlayer(actionPlayerId)?.name : ''}
         onSubstituteClick={actionPlayerId ? () => { setSubbingPlayerId(actionPlayerId); setActionPlayerId(null); } : undefined}
+      />
+
+      <EventDetailModal
+        isOpen={!!eventDetailEvent}
+        event={eventDetailEvent}
+        playersMap={playersMap}
+        onClose={() => setEventDetailEvent(null)}
+        onSave={handleUpdateEvent}
+        onDelete={eventId => {
+          handleDeleteEvent(eventId);
+          setEventDetailEvent(null);
+        }}
       />
 
       <SubstitutionModal
