@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import styles from './WatchMode.module.css';
 
 interface Player {
@@ -39,8 +40,7 @@ export function GoalModal({ isOpen, onClose, onSave, teamName, players }: GoalMo
     onClose();
   };
 
-  // Filter players for display
-  const sortedPlayers = [...players].sort((a, b) => a.jerseyNumber - b.jerseyNumber);
+  const sortedPlayers = sortPlayersForDisplay(players);
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>

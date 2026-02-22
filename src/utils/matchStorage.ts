@@ -21,6 +21,7 @@ export function normalizeMatchEvents(events: unknown[]): MatchEvent[] {
         team: ev.team as 'home' | 'away',
         stamp: ev.stamp as TeamStampType,
         ...(ev.quality != null ? { quality: ev.quality as StampQuality } : {}),
+        ...(ev.comment != null && ev.comment !== '' ? { comment: String(ev.comment) } : {}),
       };
     }
     return e as MatchEvent;
@@ -81,6 +82,74 @@ export interface MatchRecord {
 }
 
 const STORAGE_KEY = 'savedMatches';
+
+/**
+ * Auto-save for Match Pad (single draft session).
+ * Key: matchpad:autoSave:v1
+ *
+ * 動作確認ポイント:
+ * - イベント追加・編集・削除、交代・フォーメーション・配置・チーム色・タイマー操作後に「Saved」が一瞬表示され、localStorage に保存されること
+ * - タブを切り替えたり閉じる直前に保存が走ること（visibilitychange / pagehide）
+ * - 「観戦ノート作成」クリック時に draft があれば復元確認モーダルが出ること（WatchMode マウント時には出さない）
+ * - [復元する] でその試合が snapshot として開くこと / [新規作成] で draft をクリアして新規作成に進むこと
+ */
+export const AUTO_SAVE_KEY = 'matchpad:autoSave:v1';
+
+/** Same shape as WatchModeState — serializable snapshot for restore. */
+export type PersistedMatchState = WatchModeState;
+
+/**
+ * Saves Match Pad state to localStorage (auto-save).
+ * Catches errors so app does not crash on quota/stringify failure.
+ */
+export function saveAuto(state: PersistedMatchState): void {
+  try {
+    localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn('Auto-save failed', e);
+  }
+}
+
+/** Returns whether a draft (auto-saved watch state) exists. Use before offering restore. */
+export function hasDraft(): boolean {
+  try {
+    const json = localStorage.getItem(AUTO_SAVE_KEY);
+    if (!json) return false;
+    const raw = JSON.parse(json) as PersistedMatchState;
+    return !!(raw && raw.matchId && raw.events);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Loads auto-saved state from localStorage if present.
+ * Normalizes events for legacy compatibility.
+ */
+export function loadAuto(): PersistedMatchState | null {
+  try {
+    const json = localStorage.getItem(AUTO_SAVE_KEY);
+    if (!json) return null;
+    const raw = JSON.parse(json) as PersistedMatchState;
+    if (!raw || !raw.matchId || !raw.events) return null;
+    return {
+      ...raw,
+      events: normalizeMatchEvents(raw.events),
+    };
+  } catch (e) {
+    console.warn('Auto-save load failed', e);
+    return null;
+  }
+}
+
+/** Clears auto-saved state (e.g. when user chooses "Discard and new"). */
+export function clearAuto(): void {
+  try {
+    localStorage.removeItem(AUTO_SAVE_KEY);
+  } catch (e) {
+    console.warn('Clear auto-save failed', e);
+  }
+}
 
 /** Active players on pitch = current lineup values. */
 export function getActivePlayerIds(lineup: { [key: number]: string }): string[] {

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { MatchEvent } from '../../types/match';
 import { isFormationChangeEvent, isSubstitutionEvent, isTeamEvent } from '../../types/match';
-import { formatMatchEvent } from '../../utils/formatMatchEvent';
+import { formatMatchEvent, STAMP_LABELS } from '../../utils/formatMatchEvent';
+import { formatMatchTime } from '../../utils/matchTimeFormat';
+import type { TimerState } from '../../db/db';
 import styles from './WatchMode.module.css';
 
 export interface PlayerInfo {
@@ -13,6 +16,8 @@ export interface EventDetailModalProps {
   isOpen: boolean;
   event: MatchEvent | null;
   playersMap: Map<string, PlayerInfo>;
+  /** Optional timer state for time display (phase-based 45+X / 90+X or MM:SS). */
+  timerState?: TimerState | null;
   onClose: () => void;
   /** When provided, comment and time are editable and Save button updates the event. */
   onSave?: (updatedEvent: MatchEvent) => void;
@@ -24,12 +29,6 @@ const MAX_MINUTES = 120;
 const MAX_SECONDS = 59;
 const MINUTE_OPTIONS = Array.from({ length: MAX_MINUTES + 1 }, (_, i) => i);
 const SECOND_OPTIONS = Array.from({ length: MAX_SECONDS + 1 }, (_, i) => i);
-
-function formatTime(timeMs: number): string {
-  const minutes = Math.floor(timeMs / 60000);
-  const seconds = Math.floor((timeMs % 60000) / 1000);
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
 
 function timeMsToMinSec(timeMs: number): { minutes: number; seconds: number } {
   const totalSeconds = Math.floor(timeMs / 1000);
@@ -46,14 +45,15 @@ function minSecToTimeMs(minutes: number, seconds: number): number {
 }
 
 const TEAM_STAMP_LABELS: Record<string, string> = {
-  break: '崩し',
   buildUp: 'ビルドアップ',
+  counter: 'カウンター',
+  break: '崩し',
   defense: 'ディフェンス',
 };
 
 function getEventTypeLabel(event: MatchEvent): string {
   if (event.type === 'Goal') return 'ゴール';
-  if (event.type === 'Stamp') return event.stampType ? `スタンプ (${event.stampType})` : 'スタンプ';
+  if (event.type === 'Stamp') return event.stampType ? `スタンプ (${STAMP_LABELS[event.stampType] ?? event.stampType})` : 'スタンプ';
   if (event.type === 'Substitution') return '選手交代';
   if (event.type === 'team') {
     const stampLabel = TEAM_STAMP_LABELS[event.stamp] ?? event.stamp;
@@ -81,7 +81,7 @@ function getPlayerName(event: MatchEvent, playersMap: Map<string, PlayerInfo>): 
   return number != null && name ? `#${number} ${name}` : name;
 }
 
-export function EventDetailModal({ isOpen, event, playersMap, onClose, onSave, onDelete }: EventDetailModalProps) {
+export function EventDetailModal({ isOpen, event, playersMap, timerState, onClose, onSave, onDelete }: EventDetailModalProps) {
   const initialComment = event && 'comment' in event ? (event.comment ?? '') : '';
   const initialTime = event ? timeMsToMinSec(event.time) : { minutes: 0, seconds: 0 };
   const [commentDraft, setCommentDraft] = useState(initialComment);
@@ -102,7 +102,7 @@ export function EventDetailModal({ isOpen, event, playersMap, onClose, onSave, o
 
   const typeLabel = getEventTypeLabel(event);
   const playerName = getPlayerName(event, playersMap);
-  const timeStr = formatTime(event.time);
+  const timeStr = formatMatchTime(event.time, timerState);
   const formattedSummary = formatMatchEvent(event, playersMap);
   const canEdit = !!onSave;
 
@@ -121,13 +121,19 @@ export function EventDetailModal({ isOpen, event, playersMap, onClose, onSave, o
     }
   };
 
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+  const overlay = (
+    <div
+      className={`${styles.modalOverlay} ${styles.eventDetailModalOverlay}`}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="event-detail-title"
+    >
       <div className={styles.modalContent} onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '420px', display: 'flex', flexDirection: 'column' }}>
         {/* Title: full width at top */}
         <div className={styles.modalHeader} style={{ width: '100%', flexShrink: 0 }}>
           <div className={styles.modalHeaderTitleBlock} style={{ flex: 1, minWidth: 0 }}>
-            <div className={styles.modalHeaderTeamName}>Event Detail</div>
+            <div id="event-detail-title" className={styles.modalHeaderTeamName}>Event Detail</div>
             <div className={styles.modalHeaderPlayerLine}>{formattedSummary}</div>
           </div>
           <div className={styles.modalHeaderActions}>
@@ -242,4 +248,6 @@ export function EventDetailModal({ isOpen, event, playersMap, onClose, onSave, o
       </div>
     </div>
   );
+
+  return createPortal(overlay, document.body);
 }

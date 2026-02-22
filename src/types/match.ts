@@ -12,8 +12,9 @@ export interface BaseEvent {
 /** Team-level stamp type. */
 export type TeamStampType =
   | 'buildUp'
-  | 'defense'
-  | 'break';
+  | 'counter'
+  | 'break'
+  | 'defense';
 
 /** Quality of a stamp (good/bad). Default: "good". */
 export type StampQuality = 'good' | 'bad';
@@ -25,6 +26,8 @@ export interface TeamEvent extends BaseEvent {
   stamp: TeamStampType;
   /** Quality of the stamp. Default: "good". */
   quality?: StampQuality;
+  /** Optional comment (same as player stamps). */
+  comment?: string;
 }
 
 /** Payload for creating a team event (modal); id and time are set when adding to the list. */

@@ -4,6 +4,7 @@ import { useTeam } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { Pitch } from './Pitch';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { AddPlayerModal } from '../players/AddPlayerModal';
@@ -122,7 +123,7 @@ export function FormationEditor() {
             </button>
           )}
 
-          {players.map(player => {
+          {sortPlayersForDisplay(players).map(player => {
             const isAssigned = Object.values(lineup).includes(player.id);
             // If assigned to currently selected slot, it is "selected".
             // If assigned to other slot, it might be disabled or show "Moved from X".

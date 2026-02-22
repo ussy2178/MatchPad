@@ -9,13 +9,20 @@ export interface TeamStampModalProps {
 }
 
 const TEAM_STAMP_BUTTONS: { stamp: TeamStampType; label: string }[] = [
-  { stamp: 'break', label: '崩し' },
   { stamp: 'buildUp', label: 'ビルドアップ' },
+  { stamp: 'counter', label: 'カウンター' },
+  { stamp: 'break', label: '崩し' },
   { stamp: 'defense', label: 'ディフェンス' },
 ];
 
 export function TeamStampModal({ team, onSubmit, onClose }: TeamStampModalProps) {
   const [quality, setQuality] = useState<StampQuality>('good');
+  const [comment, setComment] = useState('');
+
+  const handleClose = () => {
+    setComment('');
+    onClose();
+  };
 
   const handleClick = (stamp: TeamStampType) => {
     const event: TeamEventPayload = {
@@ -23,13 +30,15 @@ export function TeamStampModal({ team, onSubmit, onClose }: TeamStampModalProps)
       team,
       stamp,
       quality,
+      ...(comment.trim() ? { comment: comment.trim() } : {}),
     };
     onSubmit(event);
+    setComment('');
     onClose();
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
+    <div className={styles.modalOverlay} onClick={handleClose}>
       <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <div className={styles.modalHeaderTitleBlock}>
@@ -41,7 +50,7 @@ export function TeamStampModal({ team, onSubmit, onClose }: TeamStampModalProps)
             </div>
           </div>
           <div className={styles.modalHeaderActions}>
-            <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Close">&times;</button>
+            <button type="button" className={styles.closeBtn} onClick={handleClose} aria-label="Close">&times;</button>
           </div>
         </div>
 
@@ -74,6 +83,20 @@ export function TeamStampModal({ team, onSubmit, onClose }: TeamStampModalProps)
               {label}
             </button>
           ))}
+        </div>
+
+        <div className={styles.commentSection}>
+          <label className={styles.commentLabel} htmlFor="team-stamp-comment">
+            Comment (optional)
+          </label>
+          <textarea
+            id="team-stamp-comment"
+            placeholder="Add a note..."
+            className={styles.commentInput}
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            rows={2}
+          />
         </div>
       </div>
     </div>

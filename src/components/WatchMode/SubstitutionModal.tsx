@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Player } from '../../db/db';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import styles from './WatchMode.module.css';
 
 export interface SubstitutionModalProps {
@@ -82,7 +83,7 @@ export function SubstitutionModal({
             ) : (
               <div className={styles.benchListScroll}>
                 <div className={styles.benchList}>
-                  {eligibleInPlayers.map(p => (
+                  {sortPlayersForDisplay(eligibleInPlayers).map(p => (
                     <div
                       key={p.id}
                       className={`${styles.benchRow} ${p.id === pendingInPlayerId ? styles.benchRowSelected : ''}`}

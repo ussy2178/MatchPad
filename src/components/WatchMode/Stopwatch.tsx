@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type MutableRefObject } from 'react';
 import { db, type TimerState } from '../../db/db';
+import { formatTimerDisplayPlain } from '../../utils/matchTimeFormat';
 import { TimeEditModal } from './TimeEditModal';
 import styles from './WatchMode.module.css';
 
@@ -13,9 +14,11 @@ interface StopwatchProps {
   syncTimeRef?: MutableRefObject<number>;
   /** Optional ref to sync current timer state for snapshot save (elapsedMs = totalMs, running: false). */
   syncTimerStateRef?: MutableRefObject<TimerState | null>;
+  /** Called after timer state is updated (start/stop/reset/manual edit). Used for auto-save. */
+  onTimerStateChange?: (state: TimerState) => void;
 }
 
-export function Stopwatch({ matchId, initialState, compact = false, persistToDb = true, syncTimeRef, syncTimerStateRef }: StopwatchProps) {
+export function Stopwatch({ matchId, initialState, compact = false, persistToDb = true, syncTimeRef, syncTimerStateRef, onTimerStateChange }: StopwatchProps) {
   const [timeEditOpen, setTimeEditOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [state, setState] = useState<TimerState>(initialState || {
@@ -33,6 +36,7 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
     if (persistToDb) {
       await db.matches.update(matchId, { timerState: newState });
     }
+    onTimerStateChange?.(newState);
   };
 
   // Timer tick effect
@@ -62,10 +66,7 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
     }
   }, [totalMs, state, syncTimeRef, syncTimerStateRef]);
 
-  const totalSeconds = Math.floor(totalMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const timeString = formatTimerDisplayPlain(totalMs);
 
   // Formatting phase
   const getPhaseLabel = (p: string) => {
@@ -129,6 +130,43 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
     setTimeEditOpen(false);
   };
 
+  const endFirstHalf = () => {
+    const currentRun = state.startedAtMs ? Date.now() - state.startedAtMs : 0;
+    saveState({
+      ...state,
+      phase: 'HT',
+      running: false,
+      startedAtMs: null,
+      elapsedMs: state.elapsedMs + currentRun,
+    });
+  };
+
+  const startSecondHalf = () => {
+    saveState({
+      ...state,
+      phase: '2H',
+      elapsedMs: 45 * 60 * 1000,
+      running: false,
+      startedAtMs: null,
+    });
+    setNow(Date.now());
+  };
+
+  const endSecondHalf = () => {
+    const currentRun = state.startedAtMs ? Date.now() - state.startedAtMs : 0;
+    saveState({
+      ...state,
+      phase: 'FT',
+      running: false,
+      startedAtMs: null,
+      elapsedMs: state.elapsedMs + currentRun,
+    });
+  };
+
+  const canEndFirstHalf = state.phase === '1H';
+  const canStartSecondHalf = state.phase === 'HT';
+  const canEndSecondHalf = state.phase === '2H';
+
   if (compact) {
     return (
       <>
@@ -155,13 +193,39 @@ export function Stopwatch({ matchId, initialState, compact = false, persistToDb 
           >
             {state.running ? '❚❚' : '▶'}
           </button>
-
           <button
             className={styles.resetBtn}
             onClick={resetTimer}
             style={{ width: 28, height: 28, fontSize: '0.9rem' }}
           >
             ⟲
+          </button>
+          <button
+            type="button"
+            className={styles.halfEndBtn}
+            onClick={endFirstHalf}
+            disabled={!canEndFirstHalf}
+            title="前半終了（タイマー停止）"
+          >
+            前半終了
+          </button>
+          <button
+            type="button"
+            className={styles.halfEndBtn}
+            onClick={startSecondHalf}
+            disabled={!canStartSecondHalf}
+            title="後半開始（45:00にリセット）"
+          >
+            後半開始
+          </button>
+          <button
+            type="button"
+            className={styles.halfEndBtn}
+            onClick={endSecondHalf}
+            disabled={!canEndSecondHalf}
+            title="後半終了"
+          >
+            後半終了
           </button>
         </div>
       </div>

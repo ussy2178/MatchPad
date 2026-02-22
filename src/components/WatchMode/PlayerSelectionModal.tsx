@@ -1,4 +1,5 @@
 import type { Player } from '../../db/db';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import styles from './WatchMode.module.css';
 
 export interface PlayerSelectionModalProps {
@@ -48,10 +49,7 @@ export function PlayerSelectionModal({
             ) : (
               <div className={styles.benchListScroll}>
                 <div className={styles.benchList}>
-                  {benchPlayers
-                    .slice()
-                    .sort((a, b) => a.jerseyNumber - b.jerseyNumber)
-                    .map(p => (
+                  {sortPlayersForDisplay(benchPlayers).map(p => (
                       <div
                         key={p.id}
                         className={styles.benchRow}

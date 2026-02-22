@@ -1,4 +1,5 @@
 import type { Player } from '../../db/db';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import styles from './WatchMode.module.css';
 
 export interface SquadAccordionProps {
@@ -31,7 +32,7 @@ export function SquadAccordion({ side, players, lineup, onPlayerClick, expanded,
       )}
       <div className={`${styles.accordionContent} ${isExpanded ? styles.expanded : ''}`}>
         <div className={styles.playerList}>
-          {players.map(p => {
+          {sortPlayersForDisplay(players).map(p => {
             const isStarter = Object.values(lineup).includes(p.id);
             if (!isStarter) return null;
             return (

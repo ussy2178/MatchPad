@@ -4,6 +4,7 @@ import { useTeam } from '../../hooks/useTeams';
 import { usePlayers, playerService } from '../../hooks/usePlayers';
 import { type Player } from '../../db/db';
 import { parsePlayerCSV } from '../../utils/csvPlayers';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 import { PlayerForm } from '../PlayerForm/PlayerForm';
@@ -106,7 +107,7 @@ export function PlayerList({ embedded }: { embedded?: boolean }) {
         </div>
       ) : (
         <div className={styles.list}>
-          {players.map((player) => (
+          {sortPlayersForDisplay(players).map((player) => (
             <div key={player.id} className={styles.playerRow}>
               <div className={styles.playerInfo}>
                 <span className={styles.jersey}>{player.jerseyNumber}</span>

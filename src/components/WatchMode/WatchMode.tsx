@@ -1,7 +1,7 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { db, type Player, type TimerState } from '../../db/db';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { db, type Player, type TimerState, type Match, type Team } from '../../db/db';
 import { Stopwatch } from './Stopwatch';
 import { HalfPitch } from './HalfPitch';
 import { PlayerActionModal } from './PlayerActionModal';
@@ -17,90 +17,32 @@ import { SquadAccordion } from './SquadAccordion';
 import { AddPlayerModal } from '../players/AddPlayerModal';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { DEFAULT_MATCH_TEAM_COLOR } from '../../db/seeds';
-import { saveMatch, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, normalizeMatchEvents, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes } from '../../utils/matchStorage';
+import { saveMatch, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, normalizeMatchEvents, saveAuto, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes, type PersistedMatchState } from '../../utils/matchStorage';
 import { isPlayerEvent } from '../../types/match';
 import { reassignLineupToFormation } from '../../utils/formationUtils';
 import type { MatchEvent, PlayerEvent, SubstitutionEvent, TeamEvent, TeamEventPayload, FormationChangeEvent } from '../../types/match';
 import { formatMatchEvent } from '../../utils/formatMatchEvent';
 import { toPastelColor } from '../../utils/colorUtils';
+import { computeTeamStampStats } from '../../utils/stampStats';
+import { formatMatchTime } from '../../utils/matchTimeFormat';
 import { MatchContext } from '../../contexts/MatchContext';
 import styles from './WatchMode.module.css';
+
+/** Data passed to inner component; guaranteed non-null so hooks never run conditionally. */
+export type WatchModeData = {
+  match: Match;
+  homeTeam: Team;
+  awayTeam: Team;
+  homePlayers: Player[];
+  awayPlayers: Player[];
+};
 
 export function WatchMode() {
   const { matchId } = useParams<{ matchId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const snapshot = location.state?.snapshot as WatchModeState | undefined;
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const initialNotes = location.state?.notes as MatchNotes | undefined;
-
-  const isSnapshotMode = !!snapshot;
-
-  const timeRef = useRef(0);
-  const timerStateRef = useRef<TimerState | null>(null);
-  const [actionPlayerId, setActionPlayerId] = useState<string | null>(null);
-  const [subbingPlayerId, setSubbingPlayerId] = useState<string | null>(null);
-
-  // Goal Modal State
-  const [goalModalState, setGoalModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
-    isOpen: false,
-    team: 'home'
-  });
-
-  // Team Stamp Modal State
-  const [teamStampModalState, setTeamStampModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
-    isOpen: false,
-    team: 'home'
-  });
-
-  // Formation Change Modal State
-  const [formationChangeModalState, setFormationChangeModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
-    isOpen: false,
-    team: 'home'
-  });
-  const formationChangeFromSubRef = useRef(false);
-  const [pendingFormationChangeFromSub, setPendingFormationChangeFromSub] = useState<{
-    toFormation: FormationName;
-    editedLineup: { [key: number]: string };
-  } | null>(null);
-
-  // Local state for events (No persistence required)
-  const [localEvents, setLocalEvents] = useState<MatchEvent[]>([]);
-  const [eventDetailEvent, setEventDetailEvent] = useState<MatchEvent | null>(null);
-
-  // Lineup state - updated on substitution to reflect on-field players
-  const [homeLineupState, setHomeLineupState] = useState<{ [key: number]: string }>({});
-  const [awayLineupState, setAwayLineupState] = useState<{ [key: number]: string }>({});
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [matchNotes, setMatchNotes] = useState<MatchNotes>(initialNotes || { firstHalf: '', secondHalf: '', fullMatch: '' });
-  const [showNotesModal, setShowNotesModal] = useState(false);
-  const [addPlayerModalOpen, setAddPlayerModalOpen] = useState(false);
-  const [addPlayerTeamId, setAddPlayerTeamId] = useState<string | null>(null);
-  const [teamColorModal, setTeamColorModal] = useState<'home' | 'away' | null>(null);
-  const [overrideHomeColor, setOverrideHomeColor] = useState<string | null>(null);
-  const [overrideAwayColor, setOverrideAwayColor] = useState<string | null>(null);
-  const [assignmentModal, setAssignmentModal] = useState<{ side: 'home' | 'away'; slotId: number } | null>(null);
-  const [homeLineupOverrides, setHomeLineupOverrides] = useState<Record<number, string>>({});
-  const [awayLineupOverrides, setAwayLineupOverrides] = useState<Record<number, string>>({});
-  const [pendingAssignmentAfterAdd, setPendingAssignmentAfterAdd] = useState<{ side: 'home' | 'away'; slotId: number } | null>(null);
-
-  // Restore events from snapshot on mount (normalize for legacy TeamEvent with timestamp)
-  useEffect(() => {
-    if (snapshot?.events) {
-      setLocalEvents(normalizeMatchEvents(snapshot.events));
-    }
-  }, [snapshot]);
-
-  // Browser back: show exit confirmation and stay on page until user confirms
-  useEffect(() => {
-    const handlePopState = () => {
-      setShowExitConfirm(true);
-      window.history.pushState(null, '', window.location.pathname + window.location.search);
-    };
-    window.history.pushState(null, '', window.location.pathname + window.location.search);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
 
   const dbData = useLiveQuery(async () => {
     // If we have a snapshot, we don't strictly need DB, but we might check matchId exists?
@@ -144,44 +86,138 @@ export function WatchMode() {
     awayPlayers: snapshot.awayPlayers
   } : dbData;
 
-  const homePlayers = data?.homePlayers ?? [];
-  const awayPlayers = data?.awayPlayers ?? [];
+  if (!data) return <div>Loading Match...</div>;
+  if (!data.homeTeam || !data.awayTeam) return <div>Loading Match...</div>;
+
+  const innerData: WatchModeData = {
+    match: data.match,
+    homeTeam: data.homeTeam,
+    awayTeam: data.awayTeam,
+    homePlayers: data.homePlayers,
+    awayPlayers: data.awayPlayers,
+  };
+
+  return (
+    <WatchModeInner
+      data={innerData}
+      matchId={matchId}
+      snapshot={snapshot}
+      initialNotes={initialNotes}
+      navigate={navigate}
+    />
+  );
+}
+
+type WatchModeInnerProps = {
+  data: WatchModeData;
+  matchId: string | undefined;
+  snapshot: WatchModeState | undefined;
+  initialNotes: MatchNotes | undefined;
+  navigate: ReturnType<typeof useNavigate>;
+};
+
+function WatchModeInner({ data, matchId, snapshot, initialNotes, navigate }: WatchModeInnerProps) {
+  const { match, homeTeam, awayTeam, homePlayers, awayPlayers } = data;
+  const isSnapshotMode = !!snapshot;
+
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const timeRef = useRef(0);
+  const timerStateRef = useRef<TimerState | null>(null);
+  const [actionPlayerId, setActionPlayerId] = useState<string | null>(null);
+  const [subbingPlayerId, setSubbingPlayerId] = useState<string | null>(null);
+
+  const [goalModalState, setGoalModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
+    isOpen: false,
+    team: 'home'
+  });
+  const [teamStampModalState, setTeamStampModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
+    isOpen: false,
+    team: 'home'
+  });
+  const [formationChangeModalState, setFormationChangeModalState] = useState<{ isOpen: boolean; team: 'home' | 'away' }>({
+    isOpen: false,
+    team: 'home'
+  });
+  const formationChangeFromSubRef = useRef(false);
+  const [pendingFormationChangeFromSub, setPendingFormationChangeFromSub] = useState<{
+    toFormation: FormationName;
+    editedLineup: { [key: number]: string };
+  } | null>(null);
+
+  const [localEvents, setLocalEvents] = useState<MatchEvent[]>([]);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const editingEvent = useMemo(
+    () => (editingEventId ? localEvents.find(ev => ev.id === editingEventId) ?? null : null),
+    [localEvents, editingEventId]
+  );
+
+  const [homeLineupState, setHomeLineupState] = useState<{ [key: number]: string }>({});
+  const [awayLineupState, setAwayLineupState] = useState<{ [key: number]: string }>({});
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [matchNotes, setMatchNotes] = useState<MatchNotes>(initialNotes || { firstHalf: '', secondHalf: '', fullMatch: '' });
+  const [showNotesModal, setShowNotesModal] = useState(false);
+  const [addPlayerModalOpen, setAddPlayerModalOpen] = useState(false);
+  const [addPlayerTeamId, setAddPlayerTeamId] = useState<string | null>(null);
+  const [teamColorModal, setTeamColorModal] = useState<'home' | 'away' | null>(null);
+  const [overrideHomeColor, setOverrideHomeColor] = useState<string | null>(null);
+  const [overrideAwayColor, setOverrideAwayColor] = useState<string | null>(null);
+  const [assignmentModal, setAssignmentModal] = useState<{ side: 'home' | 'away'; slotId: number } | null>(null);
+  const [homeLineupOverrides, setHomeLineupOverrides] = useState<Record<number, string>>({});
+  const [awayLineupOverrides, setAwayLineupOverrides] = useState<Record<number, string>>({});
+  const [pendingAssignmentAfterAdd, setPendingAssignmentAfterAdd] = useState<{ side: 'home' | 'away'; slotId: number } | null>(null);
+
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const getSnapshotRef = useRef<() => PersistedMatchState | null>(() => null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTimerStateFromStopwatchRef = useRef<TimerState | null>(null);
+  const savedIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [lastTimerState, setLastTimerState] = useState<TimerState | null>(null);
+
+  useEffect(() => {
+    if (snapshot?.events) {
+      setLocalEvents(normalizeMatchEvents(snapshot.events));
+    }
+  }, [snapshot]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setShowExitConfirm(true);
+      window.history.pushState(null, '', window.location.pathname + window.location.search);
+    };
+    window.history.pushState(null, '', window.location.pathname + window.location.search);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const playersMap = useMemo(() => {
     const m = new Map<string, { name: string; jerseyNumber: number }>();
     [...homePlayers, ...awayPlayers].forEach(p => m.set(p.id, { name: p.name, jerseyNumber: p.jerseyNumber }));
     return m;
   }, [homePlayers, awayPlayers]);
 
-  const match = data?.match ?? null;
   const effectiveHomeLineup = useMemo(() => {
-    if (!match) return {};
     const initial = snapshot?.initialHomeLineup ?? match.homeLineup ?? {};
     return computeLineupFromEvents(initial as { [key: number]: string }, localEvents, 'home');
-  }, [snapshot?.initialHomeLineup, match?.homeLineup, localEvents]);
+  }, [snapshot?.initialHomeLineup, match.homeLineup, localEvents]);
   const effectiveAwayLineup = useMemo(() => {
-    if (!match) return {};
     const initial = snapshot?.initialAwayLineup ?? match.awayLineup ?? {};
     return computeLineupFromEvents(initial as { [key: number]: string }, localEvents, 'away');
-  }, [snapshot?.initialAwayLineup, match?.awayLineup, localEvents]);
+  }, [snapshot?.initialAwayLineup, match.awayLineup, localEvents]);
 
-  // Sync lineup state from derived lineup when match/events change
   useEffect(() => {
     setHomeLineupState(effectiveHomeLineup);
     setAwayLineupState(effectiveAwayLineup);
   }, [effectiveHomeLineup, effectiveAwayLineup]);
 
   const effectiveHomeFormationName = useMemo(() => {
-    if (!match) return '4-4-2';
     const initial = match.homeFormation || '4-4-2';
     return computeFormationFromEvents(initial, localEvents, 'home');
-  }, [match?.homeFormation, localEvents]);
+  }, [match.homeFormation, localEvents]);
   const effectiveAwayFormationName = useMemo(() => {
-    if (!match) return '4-4-2';
     const initial = match.awayFormation || '4-4-2';
     return computeFormationFromEvents(initial, localEvents, 'away');
-  }, [match?.awayFormation, localEvents]);
+  }, [match.awayFormation, localEvents]);
 
-  // Base lineup from state or effective (events); then fill empty slots from assignment overrides (hooks must stay at top level)
   const baseHomeLineup = Object.keys(homeLineupState).length > 0 ? homeLineupState : effectiveHomeLineup;
   const baseAwayLineup = Object.keys(awayLineupState).length > 0 ? awayLineupState : effectiveAwayLineup;
   const displayHomeLineup = useMemo(() => {
@@ -201,7 +237,6 @@ export function WatchMode() {
     return out;
   }, [baseAwayLineup, awayLineupOverrides]);
 
-  // Bench players for assignment modal (not currently on pitch) — hooks at top level
   const homeBenchForAssignment = useMemo(
     () => homePlayers.filter(p => !Object.values(displayHomeLineup).includes(p.id)),
     [homePlayers, displayHomeLineup]
@@ -211,8 +246,85 @@ export function WatchMode() {
     [awayPlayers, displayAwayLineup]
   );
 
-  if (!data) return <div>Loading Match...</div>;
-  const { homeTeam, awayTeam } = data;
+  const stampStats = useMemo(() => computeTeamStampStats(localEvents), [localEvents]);
+
+  useEffect(() => {
+    const effectiveHomeBenchVal = isSnapshotMode ? (snapshot?.homeBench ?? []) : (match?.homeBench ?? []);
+    const effectiveAwayBenchVal = isSnapshotMode ? (snapshot?.awayBench ?? []) : (match?.awayBench ?? []);
+    getSnapshotRef.current = () => {
+      const timerState = lastTimerStateFromStopwatchRef.current ?? match?.timerState ?? snapshot?.timerState;
+      return {
+        matchId: match?.id ?? snapshot?.matchId ?? '',
+        homeTeam,
+        awayTeam,
+        homePlayers,
+        awayPlayers,
+        initialHomeLineup: match?.homeLineup ?? snapshot?.initialHomeLineup ?? snapshot?.homeLineup ?? {},
+        initialAwayLineup: match?.awayLineup ?? snapshot?.initialAwayLineup ?? snapshot?.awayLineup ?? {},
+        homeLineup: displayHomeLineup,
+        awayLineup: displayAwayLineup,
+        homeBench: effectiveHomeBenchVal,
+        awayBench: effectiveAwayBenchVal,
+        homeFormation: match?.homeFormation ?? snapshot?.homeFormation ?? '4-4-2',
+        awayFormation: match?.awayFormation ?? snapshot?.awayFormation ?? '4-4-2',
+        timerState: timerState ?? undefined,
+        events: localEvents,
+        homeTeamColor: isSnapshotMode ? (overrideHomeColor ?? snapshot?.homeTeamColor) : match?.homeTeamColor,
+        awayTeamColor: isSnapshotMode ? (overrideAwayColor ?? snapshot?.awayTeamColor) : match?.awayTeamColor,
+      };
+    };
+  }, [match, snapshot, homeTeam, awayTeam, homePlayers, awayPlayers, localEvents, displayHomeLineup, displayAwayLineup, overrideHomeColor, overrideAwayColor, isSnapshotMode]);
+
+  const AUTO_SAVE_DEBOUNCE_MS = 500;
+  const triggerAutoSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const s = getSnapshotRef.current?.();
+      if (s) {
+        saveAuto(s);
+        setLastSavedAt(Date.now());
+      }
+      saveTimerRef.current = null;
+    }, AUTO_SAVE_DEBOUNCE_MS);
+  }, []);
+  const flushAutoSave = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const s = getSnapshotRef.current?.();
+    if (s) {
+      saveAuto(s);
+      setLastSavedAt(Date.now());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (lastSavedAt == null) return;
+    if (savedIndicatorTimeoutRef.current) clearTimeout(savedIndicatorTimeoutRef.current);
+    savedIndicatorTimeoutRef.current = setTimeout(() => setLastSavedAt(null), 3000);
+    return () => {
+      if (savedIndicatorTimeoutRef.current) clearTimeout(savedIndicatorTimeoutRef.current);
+    };
+  }, [lastSavedAt]);
+
+  useEffect(() => {
+    const ts = match?.timerState ?? snapshot?.timerState ?? null;
+    if (ts) setLastTimerState(ts);
+  }, [match?.timerState, snapshot?.timerState]);
+
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') flushAutoSave();
+    };
+    const handlePageHide = () => flushAutoSave();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [flushAutoSave]);
 
   const effectiveHomeBench = isSnapshotMode ? (snapshot?.homeBench ?? []) : (match?.homeBench ?? []);
   const effectiveAwayBench = isSnapshotMode ? (snapshot?.awayBench ?? []) : (match?.awayBench ?? []);
@@ -225,6 +337,9 @@ export function WatchMode() {
   const effectiveAwayColor = overrideAwayColor ?? match?.awayTeamColor ?? DEFAULT_MATCH_TEAM_COLOR;
   const pastelHomeColor = toPastelColor(effectiveHomeColor);
   const pastelAwayColor = toPastelColor(effectiveAwayColor);
+
+  /** Timer state for event time display (stoppage: 45+N / 90+N). */
+  const timerStateForDisplay = lastTimerState ?? match?.timerState ?? snapshot?.timerState ?? null;
 
   const getPlayer = (id: string) => [...homePlayers, ...awayPlayers].find(p => p.id === id);
 
@@ -255,6 +370,7 @@ export function WatchMode() {
       if (isSnapshotMode) setOverrideAwayColor(hex);
       else if (match?.id) void db.matches.update(match.id, { awayTeamColor: hex });
     }
+    triggerAutoSave();
   };
 
   const handleEmptySlotClick = (side: 'home' | 'away', slotId: number) => {
@@ -269,6 +385,7 @@ export function WatchMode() {
       setAwayLineupOverrides(prev => ({ ...prev, [assignmentModal.slotId]: playerId }));
     }
     setAssignmentModal(null);
+    triggerAutoSave();
   };
 
   const handlePlayerClick = (playerId: string) => {
@@ -301,6 +418,7 @@ export function WatchMode() {
     };
     setLocalEvents(prev => [newEvent, ...prev]);
     setActionPlayerId(null);
+    triggerAutoSave();
   };
 
   const handleSubstitution = async (inPlayerId: string) => {
@@ -358,6 +476,7 @@ export function WatchMode() {
       });
     }
     setLocalEvents(prev => [subEvent, ...prev]);
+    triggerAutoSave();
 
     // 3. If formation change was selected during sub flow, add formation change event (same “single” action)
     if (pendingFormation) {
@@ -373,6 +492,7 @@ export function WatchMode() {
       };
       setLocalEvents(prev => [formationEvent, ...prev]);
       setPendingFormationChangeFromSub(null);
+      triggerAutoSave();
     }
 
     setSubbingPlayerId(null);
@@ -412,6 +532,7 @@ export function WatchMode() {
     };
 
     setLocalEvents(prev => [newEvent, ...prev]);
+    triggerAutoSave();
   };
 
   const handleFormationChange = (team: 'home' | 'away', toFormation: string, editedLineup?: { [key: number]: string }) => {
@@ -430,6 +551,7 @@ export function WatchMode() {
       lineupSnapshot,
     };
     setLocalEvents(prev => [event, ...prev]);
+    triggerAutoSave();
   };
 
   const handleTeamStampSubmit = (event: TeamEventPayload) => {
@@ -439,14 +561,17 @@ export function WatchMode() {
       time: getTime(),
     };
     setLocalEvents(prev => [toPush, ...prev]);
+    triggerAutoSave();
   };
 
   const handleDeleteEvent = (id: string) => {
     setLocalEvents(prev => prev.filter(ev => ev.id !== id));
+    triggerAutoSave();
   };
 
   const handleUpdateEvent = (updatedEvent: MatchEvent) => {
     setLocalEvents(prev => prev.map(ev => (ev.id === updatedEvent.id ? updatedEvent : ev)));
+    triggerAutoSave();
   };
 
   // Helper to filter active players
@@ -556,11 +681,19 @@ export function WatchMode() {
               persistToDb={!isSnapshotMode}
               syncTimeRef={isSnapshotMode ? timeRef : undefined}
               syncTimerStateRef={isSnapshotMode ? timerStateRef : undefined}
+              onTimerStateChange={state => {
+                lastTimerStateFromStopwatchRef.current = state;
+                setLastTimerState(state);
+                triggerAutoSave();
+              }}
             />
           </div>
 
-          {/* Right: Actions */}
-          <div className={styles.headerRight}>
+          {/* Right: Actions + auto-save indicator */}
+          <div className={styles.headerRight} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {lastSavedAt != null && (
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-sub)' }} aria-live="polite">Saved</span>
+            )}
             <button
               onClick={() => setShowNotesModal(true)}
               className={styles.saveBtn}
@@ -583,69 +716,75 @@ export function WatchMode() {
           <div className={styles.teamsHeader}>
             {/* Home Team */}
             <div className={styles.teamBadge}>
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <button className={styles.goalBtn} onClick={() => setGoalModalState({ isOpen: true, team: 'home' })}>⚽</button>
+              <div className={styles.teamBadgeRow}>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button className={styles.goalBtn} onClick={() => setGoalModalState({ isOpen: true, team: 'home' })}>⚽</button>
+                  <button
+                    className={`${styles.goalBtn} ${styles.teamStampBtn}`}
+                    onClick={() => setTeamStampModalState({ isOpen: true, team: 'home' })}
+                    title="Team Stamp"
+                  >
+                    Team
+                  </button>
+                  <button
+                    className={`${styles.goalBtn} ${styles.teamStampBtn}`}
+                    onClick={() => setFormationChangeModalState({ isOpen: true, team: 'home' })}
+                    title="Formation"
+                  >
+                    Formation
+                  </button>
+                </div>
+                {homeTeam?.logoPath && <img src={homeTeam.logoPath} alt="Home" />}
+                <span className={styles.teamNameWrap} title={homeTeam?.name}>{homeTeam?.name}</span>
                 <button
-                  className={`${styles.goalBtn} ${styles.teamStampBtn}`}
-                  onClick={() => setTeamStampModalState({ isOpen: true, team: 'home' })}
-                  title="Team Stamp"
-                >
-                  Team
-                </button>
-                <button
-                  className={`${styles.goalBtn} ${styles.teamStampBtn}`}
-                  onClick={() => setFormationChangeModalState({ isOpen: true, team: 'home' })}
-                  title="Formation"
-                >
-                  Formation
-                </button>
+                  type="button"
+                  className={effectiveHomeColor.toLowerCase() === '#ffffff' ? `${styles.teamColorDot} ${styles.teamColorDotWhite}` : styles.teamColorDot}
+                  style={{ backgroundColor: effectiveHomeColor }}
+                  onClick={() => setTeamColorModal('home')}
+                  title="Change team color"
+                  aria-label="Change home team color"
+                />
               </div>
-              {homeTeam?.logoPath && <img src={homeTeam.logoPath} alt="Home" />}
-              <span>{homeTeam?.name}</span>
-              <button
-                type="button"
-                className={effectiveHomeColor.toLowerCase() === '#ffffff' ? `${styles.teamColorDot} ${styles.teamColorDotWhite}` : styles.teamColorDot}
-                style={{ backgroundColor: effectiveHomeColor }}
-                onClick={() => setTeamColorModal('home')}
-                title="Change team color"
-                aria-label="Change home team color"
-              />
+              <div className={styles.stampCountUnder}>Good {stampStats.home.good} · Bad {stampStats.home.bad}</div>
             </div>
 
-            <div className={styles.vsBadge}>
+            <div className={styles.scoreBlockCenter}>
               <div className={styles.liveScore}>{homeScore} - {awayScore}</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>VS</div>
+              <div className={styles.vsLabel}>VS</div>
             </div>
 
             {/* Away Team */}
             <div className={styles.teamBadge}>
-              <span>{awayTeam?.name}</span>
-              <button
-                type="button"
-                className={effectiveAwayColor.toLowerCase() === '#ffffff' ? `${styles.teamColorDot} ${styles.teamColorDotWhite}` : styles.teamColorDot}
-                style={{ backgroundColor: effectiveAwayColor }}
-                onClick={() => setTeamColorModal('away')}
-                title="Change team color"
-                aria-label="Change away team color"
-              />
-              {awayTeam?.logoPath && <img src={awayTeam.logoPath} alt="Away" />}
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div className={styles.teamBadgeRow}>
+                <span className={styles.teamNameWrap} title={awayTeam?.name}>{awayTeam?.name}</span>
                 <button
-                  className={`${styles.goalBtn} ${styles.teamStampBtn}`}
-                  onClick={() => setFormationChangeModalState({ isOpen: true, team: 'away' })}
-                  title="Formation"
-                >
-                  Formation
-                </button>
-                <button
-                  className={`${styles.goalBtn} ${styles.teamStampBtn}`}
-                  onClick={() => setTeamStampModalState({ isOpen: true, team: 'away' })}
-                  title="Team Stamp"
-                >
-                  Team
-                </button>
-                <button className={styles.goalBtn} onClick={() => setGoalModalState({ isOpen: true, team: 'away' })}>⚽</button>
+                  type="button"
+                  className={effectiveAwayColor.toLowerCase() === '#ffffff' ? `${styles.teamColorDot} ${styles.teamColorDotWhite}` : styles.teamColorDot}
+                  style={{ backgroundColor: effectiveAwayColor }}
+                  onClick={() => setTeamColorModal('away')}
+                  title="Change team color"
+                  aria-label="Change away team color"
+                />
+                {awayTeam?.logoPath && <img src={awayTeam.logoPath} alt="Away" />}
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button
+                    className={`${styles.goalBtn} ${styles.teamStampBtn}`}
+                    onClick={() => setFormationChangeModalState({ isOpen: true, team: 'away' })}
+                    title="Formation"
+                  >
+                    Formation
+                  </button>
+                  <button
+                    className={`${styles.goalBtn} ${styles.teamStampBtn}`}
+                    onClick={() => setTeamStampModalState({ isOpen: true, team: 'away' })}
+                    title="Team Stamp"
+                  >
+                    Team
+                  </button>
+                  <button className={styles.goalBtn} onClick={() => setGoalModalState({ isOpen: true, team: 'away' })}>⚽</button>
+                </div>
               </div>
+              <div className={styles.stampCountUnder}>Good {stampStats.away.good} · Bad {stampStats.away.bad}</div>
             </div>
           </div>
         </div>
@@ -728,10 +867,7 @@ export function WatchMode() {
           ) : (
             <div className={styles.eventList}>
               {localEvents.map(ev => {
-                const timeMs = ev.time;
-                const minutes = Math.floor(timeMs / 60000);
-                const seconds = Math.floor((timeMs % 60000) / 1000);
-                const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                const timeStr = formatMatchTime(ev.time, timerStateForDisplay);
                 const formatted = formatMatchEvent(ev, playersMap);
                 const team = ev.team === 'home' ? homeTeam : awayTeam;
                 const isTeamEvent = ev.type === 'team';
@@ -743,8 +879,11 @@ export function WatchMode() {
                     className={styles.eventItem}
                     role="button"
                     tabIndex={0}
-                    onClick={() => setEventDetailEvent(ev)}
-                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEventDetailEvent(ev); } }}
+                    onClick={() => {
+                      if (import.meta.env.DEV) console.log('event row clicked', ev.id);
+                      setEditingEventId(ev.id);
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditingEventId(ev.id); } }}
                   >
                     <span className={styles.eventTime}>[{timeStr}]</span>
                     {showTeamName ? (
@@ -776,6 +915,9 @@ export function WatchMode() {
                     >
                       {formatted}
                     </span>
+                    {'comment' in ev && ev.comment && (
+                      <span className={styles.eventCommentIndicator} title={ev.comment} aria-label="Has comment">📝</span>
+                    )}
                     <button
                       type="button"
                       className={styles.deleteBtn}
@@ -809,14 +951,15 @@ export function WatchMode() {
       />
 
       <EventDetailModal
-        isOpen={!!eventDetailEvent}
-        event={eventDetailEvent}
+        isOpen={editingEventId != null}
+        event={editingEvent}
         playersMap={playersMap}
-        onClose={() => setEventDetailEvent(null)}
+        timerState={timerStateForDisplay}
+        onClose={() => setEditingEventId(null)}
         onSave={handleUpdateEvent}
         onDelete={eventId => {
           handleDeleteEvent(eventId);
-          setEventDetailEvent(null);
+          setEditingEventId(null);
         }}
       />
 
@@ -861,6 +1004,7 @@ export function WatchMode() {
               }
               setAssignmentModal(null);
               setPendingAssignmentAfterAdd(null);
+              triggerAutoSave();
             }
             setAddPlayerModalOpen(false);
             setAddPlayerTeamId(null);

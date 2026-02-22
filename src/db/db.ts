@@ -16,6 +16,10 @@ export interface TimerState {
   running: boolean;
   startedAtMs: number | null; // Timestamp when started/resumed
   elapsedMs: number;          // Accumulated time before current start
+  /** When true, times >= 45:00 are displayed as 45+N (first-half stoppage). */
+  firstHalfEndMarked?: boolean;
+  /** When true, times >= 90:00 are displayed as 90+N (second-half stoppage). */
+  secondHalfEndMarked?: boolean;
 }
 
 export interface Match {

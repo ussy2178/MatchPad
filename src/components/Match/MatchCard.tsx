@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type MatchRecord } from '../../utils/matchStorage';
+import { computeTeamStampStats } from '../../utils/stampStats';
 import styles from './MatchCard.module.css';
 
 interface MatchCardProps {
@@ -10,6 +11,7 @@ interface MatchCardProps {
 
 export function MatchCard({ match, onDelete }: MatchCardProps) {
   const navigate = useNavigate();
+  const stampStats = computeTeamStampStats(match.events ?? []);
 
   const handleCardClick = () => {
     if (match.snapshot) {
@@ -51,6 +53,9 @@ export function MatchCard({ match, onDelete }: MatchCardProps) {
       <div className={styles.footer}>
         <span>{match.events.length} events recorded</span>
         {!match.snapshot && <span className={styles.noReplay}>(No Replay)</span>}
+        <span className={styles.stampSummary}>
+          Stamps: H Good {stampStats.home.good} Bad {stampStats.home.bad} / A Good {stampStats.away.good} Bad {stampStats.away.bad}
+        </span>
       </div>
     </div>
   );

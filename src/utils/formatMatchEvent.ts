@@ -1,11 +1,13 @@
 import type { MatchEvent, SubstitutionEvent } from '../types/match';
 import { isFormationChangeEvent } from '../types/match';
 
-const STAMP_LABELS: Record<string, string> = {
+/** 個人スタンプの表示名（イベント一覧・Event Detail Modal で使用） */
+export const STAMP_LABELS: Record<string, string> = {
   pass: 'パス',
   trap: 'トラップ',
-  shot: 'シュート',
+  post_play: 'ポストプレー',
   dribble: 'ドリブル',
+  shot: 'シュート',
   cross: 'クロス',
   defense: 'ディフェンス',
   save: 'セーブ',
@@ -33,8 +35,9 @@ export function formatMatchEvent(
 
   if (event.type === 'team') {
     const TEAM_STAMP_LABELS: Record<string, string> = {
-      break: '崩し',
       buildUp: 'ビルドアップ',
+      counter: 'カウンター',
+      break: '崩し',
       defense: 'ディフェンス',
     };
     return TEAM_STAMP_LABELS[event.stamp] ?? event.stamp;

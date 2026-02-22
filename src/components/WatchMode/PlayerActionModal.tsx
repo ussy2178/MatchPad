@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { StampQuality } from '../../types/match';
 import styles from './WatchMode.module.css';
 
-type StampType = 'pass' | 'trap' | 'shot' | 'defense' | 'dribble' | 'cross' | 'movement' | 'positioning' | 'running' | 'save' | 'foul';
+type StampType = 'pass' | 'trap' | 'post_play' | 'dribble' | 'shot' | 'cross' | 'defense' | 'save' | 'positioning' | 'running';
 
 interface PlayerActionModalProps {
   isOpen: boolean;
@@ -17,13 +17,17 @@ interface PlayerActionModalProps {
 }
 
 const STAMP_DEFINITIONS: { type: StampType; label: string; category: 'attack' | 'defense' | 'other' }[] = [
+  // 攻撃
   { type: 'pass', label: 'パス', category: 'attack' },
   { type: 'trap', label: 'トラップ', category: 'attack' },
+  { type: 'post_play', label: 'ポストプレー', category: 'attack' },
   { type: 'dribble', label: 'ドリブル', category: 'attack' },
   { type: 'shot', label: 'シュート', category: 'attack' },
   { type: 'cross', label: 'クロス', category: 'attack' },
+  // 守備
   { type: 'defense', label: 'ディフェンス', category: 'defense' },
   { type: 'save', label: 'セーブ', category: 'defense' },
+  // その他
   { type: 'positioning', label: 'ポジショニング', category: 'other' },
   { type: 'running', label: 'ランニング', category: 'other' },
 ];

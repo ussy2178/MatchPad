@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Player } from '../../db/db';
 import { normalizePosition } from '../../utils/idUtils';
+import { sortPlayersForDisplay } from '../../utils/playerSort';
 import styles from './Formation.module.css';
 
 interface SquadPanelProps {
@@ -37,16 +38,14 @@ export function SquadPanel({ players, onSelectPlayer, selectedPosIndex, activeCa
     setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
   };
 
-  // Group players by position
+  // Group players by position (order: GK → DF → MF → FW); within each group use display order (position + jersey).
   const groupedPlayers = useMemo(() => {
-    // Debug logging
-    console.log('SquadPanel: filtering players', players.length, players.map(p => p.position));
-
+    const sorted = sortPlayersForDisplay(players);
     return {
-      GK: players.filter(p => normalizePosition(p.position) === 'GK'),
-      DF: players.filter(p => normalizePosition(p.position) === 'DF'),
-      MF: players.filter(p => normalizePosition(p.position) === 'MF'),
-      FW: players.filter(p => normalizePosition(p.position) === 'FW'),
+      GK: sorted.filter(p => normalizePosition(p.position) === 'GK'),
+      DF: sorted.filter(p => normalizePosition(p.position) === 'DF'),
+      MF: sorted.filter(p => normalizePosition(p.position) === 'MF'),
+      FW: sorted.filter(p => normalizePosition(p.position) === 'FW'),
     };
   }, [players]);
 
