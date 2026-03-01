@@ -17,7 +17,7 @@ import { SquadAccordion } from './SquadAccordion';
 import { AddPlayerModal } from '../players/AddPlayerModal';
 import { FORMATIONS, type FormationName } from '../../constants/formations';
 import { DEFAULT_MATCH_TEAM_COLOR } from '../../db/seeds';
-import { saveMatch, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, normalizeMatchEvents, saveAuto, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes, type PersistedMatchState } from '../../utils/matchStorage';
+import { saveMatch, getMatchById, getEligibleSubstitutes, computeLineupFromEvents, computeFormationFromEvents, normalizeMatchEvents, saveAuto, type MatchRecord, type PlayerStats, type WatchModeState, type MatchNotes, type PersistedMatchState } from '../../utils/matchStorage';
 import { isPlayerEvent } from '../../types/match';
 import { reassignLineupToFormation } from '../../utils/formationUtils';
 import type { MatchEvent, PlayerEvent, SubstitutionEvent, TeamEvent, TeamEventPayload, FormationChangeEvent } from '../../types/match';
@@ -43,13 +43,119 @@ export function WatchMode() {
   const { matchId } = useParams<{ matchId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const snapshot = location.state?.snapshot as WatchModeState | undefined;
-  const initialNotes = location.state?.notes as MatchNotes | undefined;
+  const recordId = useMemo(
+    () => new URLSearchParams(location.search).get('recordId'),
+    [location.search]
+  );
+  const routeSnapshot = location.state?.snapshot as WatchModeState | undefined;
+  const routeNotes = location.state?.notes as MatchNotes | undefined;
+  const [snapshot, setSnapshot] = useState<WatchModeState | undefined>(routeSnapshot);
+  const [initialNotes, setInitialNotes] = useState<MatchNotes | undefined>(routeNotes);
+  const [recordLoadError, setRecordLoadError] = useState<string | null>(null);
+  const [loadingSavedRecord, setLoadingSavedRecord] = useState<boolean>(Boolean(recordId && !routeSnapshot));
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(recordId);
+  const [restoreWarning, setRestoreWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!recordId) {
+      setEditingRecordId(null);
+      setLoadingSavedRecord(false);
+      setRecordLoadError(null);
+      setRestoreWarning(null);
+      return;
+    }
+
+    setEditingRecordId(recordId);
+    if (routeSnapshot) {
+      setSnapshot(routeSnapshot);
+      setInitialNotes(routeNotes);
+      setLoadingSavedRecord(false);
+      setRecordLoadError(null);
+      setRestoreWarning(null);
+      return;
+    }
+
+    setLoadingSavedRecord(true);
+    const loadSavedRecord = async () => {
+      try {
+        const record = await getMatchById(recordId);
+        if (cancelled) return;
+        if (!record) {
+          setRecordLoadError('Saved match was not found.');
+          return;
+        }
+        console.log(
+          '[restore] matchId',
+          record.id,
+          'hasSnapshot:',
+          !!record.snapshot,
+          'events:',
+          record.events?.length ?? 0
+        );
+        if (record.snapshot) {
+          setSnapshot(record.snapshot);
+          setRestoreWarning(null);
+        } else {
+          const teams = await db.teams.toArray();
+          const homeResolved = teams.find(t => t.name === record.homeTeam) ?? {
+            id: `saved-home-${record.id}`,
+            dbTeamId: `saved-home-${record.id}`,
+            name: record.homeTeam || 'Home',
+          };
+          const awayResolved = teams.find(t => t.name === record.awayTeam) ?? {
+            id: `saved-away-${record.id}`,
+            dbTeamId: `saved-away-${record.id}`,
+            name: record.awayTeam || 'Away',
+          };
+          const playersByTeam = await fetchPlayersByTeams([homeResolved.id, awayResolved.id]);
+          const homePlayers = playersByTeam[homeResolved.id] ?? [];
+          const awayPlayers = playersByTeam[awayResolved.id] ?? [];
+
+          const fallbackSnapshot: WatchModeState = {
+            matchId: record.id,
+            homeTeam: homeResolved,
+            awayTeam: awayResolved,
+            homePlayers,
+            awayPlayers,
+            initialHomeLineup: {},
+            initialAwayLineup: {},
+            homeLineup: {},
+            awayLineup: {},
+            homeBench: [],
+            awayBench: [],
+            homeFormation: '4-4-2',
+            awayFormation: '4-4-2',
+            timerState: undefined,
+            events: normalizeMatchEvents(record.events ?? []),
+          };
+          setSnapshot(fallbackSnapshot);
+          setRestoreWarning(
+            homePlayers.length === 0 && awayPlayers.length === 0
+              ? 'Restored in simplified mode (snapshot missing). Players could not be auto-loaded.'
+              : 'Restored in simplified mode (snapshot missing). Some data uses defaults.'
+          );
+        }
+        setInitialNotes(record.notes);
+        setRecordLoadError(null);
+      } catch (e) {
+        console.error('Failed to load saved match for editing', e);
+        if (!cancelled) setRecordLoadError('Failed to load saved match.');
+      } finally {
+        if (!cancelled) setLoadingSavedRecord(false);
+      }
+    };
+
+    loadSavedRecord();
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId, routeNotes, routeSnapshot]);
 
   const dbData = useLiveQuery(async () => {
     // If we have a snapshot, we don't strictly need DB, but we might check matchId exists?
     // User rule: "If snapshot exists... skip default match setup"
-    if (snapshot) return null;
+    if (snapshot || recordId) return null;
 
     if (!matchId) return null;
     const match = await db.matches.get(matchId);
@@ -63,7 +169,7 @@ export function WatchMode() {
     const awayPlayers = playersByTeam[match.awayTeamId] ?? [];
 
     return { match, homeTeam, awayTeam, homePlayers, awayPlayers };
-  }, [matchId, snapshot]);
+  }, [matchId, recordId, snapshot]);
 
   // Construct data from snapshot OR dbData
   const data = snapshot ? {
@@ -88,8 +194,44 @@ export function WatchMode() {
     awayPlayers: snapshot.awayPlayers
   } : dbData;
 
+  if (loadingSavedRecord) return <div>Loading saved match...</div>;
+  if (recordLoadError) {
+    return (
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <h2 style={{ color: 'red' }}>Error</h2>
+        <p>{recordLoadError}</p>
+        <button onClick={() => navigate('/')} style={{ marginTop: '16px', padding: '8px 16px' }}>
+          Back to Home
+        </button>
+      </div>
+    );
+  }
   if (!data) return <div>Loading Match...</div>;
   if (!data.homeTeam || !data.awayTeam) return <div>Loading Match...</div>;
+
+  if (restoreWarning) {
+    return (
+      <>
+        <div style={{ padding: '10px 14px', background: '#fef3c7', color: '#92400e', fontSize: '0.9rem' }}>
+          {restoreWarning}
+        </div>
+        <WatchModeInner
+          data={{
+            match: data.match,
+            homeTeam: data.homeTeam,
+            awayTeam: data.awayTeam,
+            homePlayers: data.homePlayers,
+            awayPlayers: data.awayPlayers,
+          }}
+          matchId={matchId}
+          snapshot={snapshot}
+          initialNotes={initialNotes}
+          editingRecordId={editingRecordId}
+          navigate={navigate}
+        />
+      </>
+    );
+  }
 
   const innerData: WatchModeData = {
     match: data.match,
@@ -105,6 +247,7 @@ export function WatchMode() {
       matchId={matchId}
       snapshot={snapshot}
       initialNotes={initialNotes}
+      editingRecordId={editingRecordId}
       navigate={navigate}
     />
   );
@@ -115,10 +258,11 @@ type WatchModeInnerProps = {
   matchId: string | undefined;
   snapshot: WatchModeState | undefined;
   initialNotes: MatchNotes | undefined;
+  editingRecordId: string | null;
   navigate: ReturnType<typeof useNavigate>;
 };
 
-function WatchModeInner({ data, matchId, snapshot, initialNotes, navigate }: WatchModeInnerProps) {
+function WatchModeInner({ data, matchId, snapshot, initialNotes, editingRecordId, navigate }: WatchModeInnerProps) {
   const { match, homeTeam, awayTeam, homePlayers, awayPlayers } = data;
   const isSnapshotMode = !!snapshot;
 
@@ -637,7 +781,7 @@ function WatchModeInner({ data, matchId, snapshot, initialNotes, navigate }: Wat
     };
 
     const record: MatchRecord = {
-      id: crypto.randomUUID(),
+      id: editingRecordId ?? crypto.randomUUID(),
       date: new Date().toISOString(),
       homeTeam: homeTeam?.name ?? 'Home',
       awayTeam: awayTeam?.name ?? 'Away',
@@ -956,6 +1100,8 @@ function WatchModeInner({ data, matchId, snapshot, initialNotes, navigate }: Wat
         isOpen={editingEventId != null}
         event={editingEvent}
         playersMap={playersMap}
+        homePlayers={homePlayers}
+        awayPlayers={awayPlayers}
         timerState={timerStateForDisplay}
         onClose={() => setEditingEventId(null)}
         onSave={handleUpdateEvent}

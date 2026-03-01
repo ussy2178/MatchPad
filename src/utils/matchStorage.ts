@@ -238,6 +238,14 @@ function mapMatchRowsToRecords(
 }
 
 async function upsertMatchToSupabase(record: MatchRecord): Promise<void> {
+  console.log(
+    '[saveMatch] upsert match',
+    record.id,
+    'events:',
+    record.events.length,
+    'hasSnapshot:',
+    !!record.snapshot
+  );
   const { error: matchError } = await supabase
     .from('football_matches')
     .upsert(
@@ -248,6 +256,8 @@ async function upsertMatchToSupabase(record: MatchRecord): Promise<void> {
         home_score: record.score.home,
         away_score: record.score.away,
         notes: record.notes ?? {},
+        snapshot: record.snapshot ?? null,
+        player_summary: record.playerSummary ?? {},
       },
       { onConflict: 'id' }
     );

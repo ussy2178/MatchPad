@@ -4,7 +4,7 @@ import type { MatchEvent } from '../../types/match';
 import { isFormationChangeEvent, isSubstitutionEvent, isTeamEvent } from '../../types/match';
 import { formatMatchEvent, STAMP_LABELS } from '../../utils/formatMatchEvent';
 import { formatMatchTime } from '../../utils/matchTimeFormat';
-import type { TimerState } from '../../db/db';
+import type { TimerState, Player } from '../../db/db';
 import styles from './WatchMode.module.css';
 
 export interface PlayerInfo {
@@ -16,6 +16,8 @@ export interface EventDetailModalProps {
   isOpen: boolean;
   event: MatchEvent | null;
   playersMap: Map<string, PlayerInfo>;
+  homePlayers: Player[];
+  awayPlayers: Player[];
   /** Optional timer state for time display (phase-based 45+X / 90+X or MM:SS). */
   timerState?: TimerState | null;
   onClose: () => void;
@@ -81,12 +83,14 @@ function getPlayerName(event: MatchEvent, playersMap: Map<string, PlayerInfo>): 
   return number != null && name ? `#${number} ${name}` : name;
 }
 
-export function EventDetailModal({ isOpen, event, playersMap, timerState, onClose, onSave, onDelete }: EventDetailModalProps) {
+export function EventDetailModal({ isOpen, event, playersMap, homePlayers, awayPlayers, timerState, onClose, onSave, onDelete }: EventDetailModalProps) {
   const initialComment = event && 'comment' in event ? (event.comment ?? '') : '';
   const initialTime = event ? timeMsToMinSec(event.time) : { minutes: 0, seconds: 0 };
   const [commentDraft, setCommentDraft] = useState(initialComment);
   const [minutesDraft, setMinutesDraft] = useState(initialTime.minutes);
   const [secondsDraft, setSecondsDraft] = useState(initialTime.seconds);
+  const [goalTeamDraft, setGoalTeamDraft] = useState<'home' | 'away'>(event?.team ?? 'home');
+  const [goalScorerIdDraft, setGoalScorerIdDraft] = useState<string>('');
 
   useEffect(() => {
     if (event) {
@@ -95,6 +99,13 @@ export function EventDetailModal({ isOpen, event, playersMap, timerState, onClos
       const { minutes, seconds } = timeMsToMinSec(event.time);
       setMinutesDraft(minutes);
       setSecondsDraft(seconds);
+      if (event.type === 'Goal') {
+        setGoalTeamDraft(event.team);
+        setGoalScorerIdDraft(event.playerId ?? '');
+      } else {
+        setGoalTeamDraft(event.team);
+        setGoalScorerIdDraft('');
+      }
     }
   }, [event]);
 
@@ -108,7 +119,19 @@ export function EventDetailModal({ isOpen, event, playersMap, timerState, onClos
 
   const handleSave = () => {
     const timeMs = minSecToTimeMs(minutesDraft, secondsDraft);
-    const updated = { ...event, time: timeMs, comment: commentDraft } as MatchEvent;
+    let updated: MatchEvent = { ...event, time: timeMs, comment: commentDraft } as MatchEvent;
+    if (event.type === 'Goal') {
+      const pool = goalTeamDraft === 'home' ? homePlayers : awayPlayers;
+      const scorer = goalScorerIdDraft ? pool.find(p => p.id === goalScorerIdDraft) : undefined;
+      updated = {
+        ...event,
+        time: timeMs,
+        comment: commentDraft,
+        team: goalTeamDraft,
+        ...(goalScorerIdDraft ? { playerId: goalScorerIdDraft } : { playerId: undefined }),
+        playerNumber: scorer?.jerseyNumber ?? event.playerNumber ?? 0,
+      };
+    }
     onSave?.(updated);
     onClose();
   };
@@ -151,6 +174,41 @@ export function EventDetailModal({ isOpen, event, playersMap, timerState, onClos
             <div style={{ fontSize: '0.75rem', color: 'var(--color-text-sub)', marginBottom: '4px' }}>Player / Team</div>
             <div style={{ fontWeight: 500 }}>{playerName}</div>
           </div>
+          {canEdit && event.type === 'Goal' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-sub)' }}>Goal edit</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-sub)' }}>Scoring team</label>
+                <select
+                  value={goalTeamDraft}
+                  onChange={e => {
+                    const nextTeam = e.target.value as 'home' | 'away';
+                    setGoalTeamDraft(nextTeam);
+                    setGoalScorerIdDraft('');
+                  }}
+                  style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px' }}
+                >
+                  <option value="home">Home</option>
+                  <option value="away">Away</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--color-text-sub)' }}>Scorer</label>
+                <select
+                  value={goalScorerIdDraft}
+                  onChange={e => setGoalScorerIdDraft(e.target.value)}
+                  style={{ padding: '8px', border: '1px solid var(--color-border)', borderRadius: '6px' }}
+                >
+                  <option value="">Unknown</option>
+                  {(goalTeamDraft === 'home' ? homePlayers : awayPlayers).map(p => (
+                    <option key={p.id} value={p.id}>
+                      #{p.jerseyNumber} {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Time: 横1行 — 左: mm:ss 入力、右: 修正前の時間 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>

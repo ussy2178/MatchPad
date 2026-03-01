@@ -14,9 +14,10 @@ export function MatchCard({ match, onDelete }: MatchCardProps) {
   const stampStats = computeTeamStampStats(match.events ?? []);
 
   const handleCardClick = () => {
-    if (match.snapshot) {
-      navigate(`/match/${match.snapshot.matchId}/watch`, { state: { snapshot: match.snapshot, notes: match.notes } });
-    }
+    const routeMatchId = match.snapshot?.matchId ?? match.id;
+    navigate(`/match/${routeMatchId}/watch?recordId=${match.id}`, {
+      state: { snapshot: match.snapshot, notes: match.notes },
+    });
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -26,7 +27,7 @@ export function MatchCard({ match, onDelete }: MatchCardProps) {
 
   return (
     <div
-      className={`${styles.card} ${match.snapshot ? styles.clickable : ''}`}
+      className={`${styles.card} ${styles.clickable}`}
       onClick={handleCardClick}
     >
       <div className={styles.header}>
