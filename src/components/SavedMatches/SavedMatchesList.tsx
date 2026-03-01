@@ -7,7 +7,11 @@ export function SavedMatchesList() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
 
   useEffect(() => {
-    setMatches(getSavedMatches());
+    const load = async () => {
+      const saved = await getSavedMatches();
+      setMatches(saved);
+    };
+    load();
   }, []);
 
   return (

@@ -4,10 +4,20 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __COMMIT_HASH__: JSON.stringify(
+      process.env.VITE_COMMIT_HASH
+      ?? process.env.GITHUB_SHA?.slice(0, 7)
+      ?? process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7)
+      ?? ''
+    ),
+  },
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       manifest: {
         name: "MatchPad",
         short_name: "MatchPad",

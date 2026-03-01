@@ -17,11 +17,14 @@ export function TeamDetailPage() {
 
   useEffect(() => {
     if (!teamId) return;
-    const allMatches = getSavedMatches();
-    const teamMatches = allMatches
-      .filter(m => m.snapshot?.homeTeam.id === teamId || m.snapshot?.awayTeam.id === teamId || m.homeTeam === team?.name || m.awayTeam === team?.name)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    setMatches(teamMatches);
+    const load = async () => {
+      const allMatches = await getSavedMatches();
+      const teamMatches = allMatches
+        .filter(m => m.snapshot?.homeTeam.id === teamId || m.snapshot?.awayTeam.id === teamId || m.homeTeam === team?.name || m.awayTeam === team?.name)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setMatches(teamMatches);
+    };
+    load();
   }, [teamId, team?.name]);
 
   if (!teamId) return <div>Invalid Team ID</div>;

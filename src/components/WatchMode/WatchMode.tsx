@@ -26,6 +26,8 @@ import { toPastelColor } from '../../utils/colorUtils';
 import { computeTeamStampStats } from '../../utils/stampStats';
 import { formatMatchTime } from '../../utils/matchTimeFormat';
 import { MatchContext } from '../../contexts/MatchContext';
+import { MatchPadTitle } from '../common/MatchPadTitle';
+import { fetchPlayersByTeams } from '../../services/players';
 import styles from './WatchMode.module.css';
 
 /** Data passed to inner component; guaranteed non-null so hooks never run conditionally. */
@@ -56,9 +58,9 @@ export function WatchMode() {
     const homeTeam = await db.teams.get(match.homeTeamId);
     const awayTeam = await db.teams.get(match.awayTeamId);
 
-    // Fetch all players for both teams
-    const homePlayers = await db.players.where('teamId').equals(match.homeTeamId).toArray();
-    const awayPlayers = await db.players.where('teamId').equals(match.awayTeamId).toArray();
+    const playersByTeam = await fetchPlayersByTeams([match.homeTeamId, match.awayTeamId]);
+    const homePlayers = playersByTeam[match.homeTeamId] ?? [];
+    const awayPlayers = playersByTeam[match.awayTeamId] ?? [];
 
     return { match, homeTeam, awayTeam, homePlayers, awayPlayers };
   }, [matchId, snapshot]);
@@ -668,7 +670,7 @@ function WatchModeInner({ data, matchId, snapshot, initialNotes, navigate }: Wat
               onClick={() => setShowExitConfirm(true)}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
             >
-              Match Pad
+              <MatchPadTitle compact />
             </button>
           </div>
 

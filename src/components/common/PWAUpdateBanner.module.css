@@ -1,0 +1,80 @@
+.wrapper {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.checkButton {
+  pointer-events: auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  color: #111827;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.checkButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.toast {
+  pointer-events: auto;
+  width: min(280px, calc(100vw - 24px));
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.updateButton,
+.dismissButton {
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #f8fafc;
+}
+
+.updateButton {
+  background: rgba(59, 130, 246, 0.32);
+}
+
+.updateButton:disabled,
+.dismissButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+  .wrapper {
+    top: 20px;
+    right: 20px;
+  }
+}

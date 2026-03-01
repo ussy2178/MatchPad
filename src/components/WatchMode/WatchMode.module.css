@@ -137,6 +137,46 @@
   justify-self: end;
 }
 
+.versionInfoWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.versionChip {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.75);
+  color: rgba(15, 23, 42, 0.58);
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 4px 7px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.versionChip:hover {
+  color: rgba(15, 23, 42, 0.78);
+}
+
+.versionPopover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.2);
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 20;
+}
+
 /* Stopwatch Redesign */
 .stopwatchContainer {
   display: flex;

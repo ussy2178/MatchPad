@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTeams } from '../../hooks/useTeams';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
+import { MatchPadTitle } from '../common/MatchPadTitle';
 import { hasDraft, loadAuto, clearAuto } from '../../utils/matchStorage';
 import styles from './TeamList.module.css';
 
@@ -64,7 +65,7 @@ export function TeamList() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>MatchPad</h1>
+        <MatchPadTitle />
         <div style={{ display: 'flex', gap: '12px' }}>
           <Button onClick={() => navigate('/saved-matches')} style={{ backgroundColor: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db' }}>
             Saved Matches

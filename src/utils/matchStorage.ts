@@ -1,5 +1,5 @@
-import { backupMatchToSupabase } from '../services/supabaseBackup';
-import { type Team, type Player, type TimerState } from '../db/db';
+import { supabase } from '../lib/supabase';
+import { type Team, type Player, type TimerState, type EventType } from '../db/db';
 import type { MatchEvent, FormationChangeEvent, TeamStampType, StampQuality } from '../types/match';
 import { isSubstitutionEvent, isFormationChangeEvent, isPlayerEvent } from '../types/match';
 
@@ -82,6 +82,202 @@ export interface MatchRecord {
 }
 
 const STORAGE_KEY = 'savedMatches';
+
+type SupabaseMatchRow = {
+  id: string;
+  created_at?: string | null;
+  home_team?: string | null;
+  away_team?: string | null;
+  home_score?: number | null;
+  away_score?: number | null;
+  notes?: unknown;
+  player_summary?: unknown;
+  snapshot?: unknown;
+};
+
+type SupabaseEventRow = {
+  id?: string | null;
+  match_id: string;
+  minute?: number | null;
+  team?: string | null;
+  player?: number | null;
+  type?: string | null;
+  sub_type?: string | null;
+  comment?: string | null;
+  created_at?: string | null;
+};
+
+function readSavedMatchesFromLocalStorage(): MatchRecord[] {
+  try {
+    const json = localStorage.getItem(STORAGE_KEY);
+    if (!json) return [];
+    const raw = JSON.parse(json) as MatchRecord[];
+    return raw.map(record => ({
+      ...record,
+      events: normalizeMatchEvents(record.events ?? []),
+    }));
+  } catch (e) {
+    console.error('Failed to load matches from localStorage', e);
+    return [];
+  }
+}
+
+function writeSavedMatchesToLocalStorage(matches: MatchRecord[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(matches));
+  } catch (e) {
+    console.warn('Failed to write matches to localStorage', e);
+  }
+}
+
+function asNotes(notes: unknown): MatchNotes | undefined {
+  if (!notes || typeof notes !== 'object') return undefined;
+  const n = notes as Record<string, unknown>;
+  return {
+    firstHalf: typeof n.firstHalf === 'string' ? n.firstHalf : '',
+    secondHalf: typeof n.secondHalf === 'string' ? n.secondHalf : '',
+    fullMatch: typeof n.fullMatch === 'string' ? n.fullMatch : '',
+  };
+}
+
+function asPlayerSummary(playerSummary: unknown): { [playerId: string]: PlayerStats } {
+  if (!playerSummary || typeof playerSummary !== 'object') return {};
+  return playerSummary as { [playerId: string]: PlayerStats };
+}
+
+function asSnapshot(snapshot: unknown): WatchModeState | undefined {
+  if (!snapshot || typeof snapshot !== 'object') return undefined;
+  return snapshot as WatchModeState;
+}
+
+function toTeam(value: unknown): 'home' | 'away' {
+  return value === 'away' ? 'away' : 'home';
+}
+
+function toEventTime(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function mapEventRowToMatchEvent(row: SupabaseEventRow): MatchEvent {
+  const type = row.type ?? 'Stamp';
+  const eventId = row.id && row.id !== '' ? row.id : crypto.randomUUID();
+  const time = toEventTime(row.minute);
+  const team = toTeam(row.team);
+
+  if (type === 'team') {
+    const stamp = (row.sub_type ?? 'buildUp') as TeamStampType;
+    return {
+      id: eventId,
+      time,
+      type: 'team',
+      team,
+      stamp,
+      ...(row.comment ? { comment: row.comment } : {}),
+    };
+  }
+
+  if (type === 'FORMATION_CHANGE') {
+    return {
+      id: eventId,
+      time,
+      type: 'FORMATION_CHANGE',
+      team,
+      fromFormation: '',
+      toFormation: '',
+      lineupSnapshot: {},
+    };
+  }
+
+  if (type === 'Substitution') {
+    return {
+      id: eventId,
+      time,
+      type: 'Substitution',
+      team,
+      ...(row.comment ? { comment: row.comment } : {}),
+    };
+  }
+
+  const playerType = type as EventType | 'Stamp' | 'Goal';
+  return {
+    id: eventId,
+    time,
+    team,
+    playerNumber: typeof row.player === 'number' ? row.player : 0,
+    type: playerType,
+    ...(row.sub_type ? { stampType: row.sub_type } : {}),
+    ...(row.comment ? { comment: row.comment } : {}),
+  };
+}
+
+function mapMatchRowsToRecords(
+  matchRows: SupabaseMatchRow[],
+  eventRows: SupabaseEventRow[]
+): MatchRecord[] {
+  const eventsByMatchId = new Map<string, MatchEvent[]>();
+  for (const row of eventRows) {
+    const list = eventsByMatchId.get(row.match_id) ?? [];
+    list.push(mapEventRowToMatchEvent(row));
+    eventsByMatchId.set(row.match_id, list);
+  }
+
+  return matchRows.map(row => ({
+    id: row.id,
+    date: row.created_at ?? new Date().toISOString(),
+    homeTeam: row.home_team ?? 'Home',
+    awayTeam: row.away_team ?? 'Away',
+    score: {
+      home: row.home_score ?? 0,
+      away: row.away_score ?? 0,
+    },
+    events: normalizeMatchEvents(eventsByMatchId.get(row.id) ?? []),
+    playerSummary: asPlayerSummary(row.player_summary),
+    snapshot: asSnapshot(row.snapshot),
+    notes: asNotes(row.notes),
+  }));
+}
+
+async function upsertMatchToSupabase(record: MatchRecord): Promise<void> {
+  const { error: matchError } = await supabase
+    .from('football_matches')
+    .upsert(
+      {
+        id: record.id,
+        home_team: record.homeTeam,
+        away_team: record.awayTeam,
+        home_score: record.score.home,
+        away_score: record.score.away,
+        notes: record.notes ?? {},
+      },
+      { onConflict: 'id' }
+    );
+
+  if (matchError) throw matchError;
+
+  const { error: deleteEventsError } = await supabase
+    .from('football_events')
+    .delete()
+    .eq('match_id', record.id);
+  if (deleteEventsError) throw deleteEventsError;
+
+  if (record.events.length === 0) return;
+
+  const eventRows = record.events.map(event => ({
+    match_id: record.id,
+    minute: event.time,
+    team: event.team,
+    player: 'playerNumber' in event ? event.playerNumber : null,
+    type: event.type,
+    sub_type: 'stampType' in event ? event.stampType ?? null : ('stamp' in event ? event.stamp : null),
+    comment: 'comment' in event ? event.comment ?? null : null,
+  }));
+
+  const { error: eventsError } = await supabase
+    .from('football_events')
+    .insert(eventRows);
+
+  if (eventsError) throw eventsError;
+}
 
 /**
  * Auto-save for Match Pad (single draft session).
@@ -226,46 +422,119 @@ export function getEligibleSubstitutes(
   return teamPlayers.filter(notActive);
 }
 
-export function getSavedMatches(): MatchRecord[] {
+export async function listMatchesFromSupabase(): Promise<MatchRecord[]> {
+  const { data: matchData, error: matchError } = await supabase
+    .from('football_matches')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (matchError) throw matchError;
+
+  const matchRows = (matchData ?? []) as SupabaseMatchRow[];
+  if (matchRows.length === 0) return [];
+
+  const matchIds = matchRows.map(row => row.id);
+  const { data: eventData, error: eventError } = await supabase
+    .from('football_events')
+    .select('*')
+    .in('match_id', matchIds)
+    .order('minute', { ascending: true });
+
+  if (eventError) throw eventError;
+
+  return mapMatchRowsToRecords(matchRows, (eventData ?? []) as SupabaseEventRow[]);
+}
+
+export async function getMatchByIdFromSupabase(id: string): Promise<MatchRecord | null> {
+  const { data: matchData, error: matchError } = await supabase
+    .from('football_matches')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (matchError) throw matchError;
+  if (!matchData) return null;
+
+  const { data: eventData, error: eventError } = await supabase
+    .from('football_events')
+    .select('*')
+    .eq('match_id', id)
+    .order('minute', { ascending: true });
+
+  if (eventError) throw eventError;
+
+  const records = mapMatchRowsToRecords(
+    [matchData as SupabaseMatchRow],
+    (eventData ?? []) as SupabaseEventRow[]
+  );
+  return records[0] ?? null;
+}
+
+export async function getSavedMatches(): Promise<MatchRecord[]> {
   try {
-    const json = localStorage.getItem(STORAGE_KEY);
-    return json ? JSON.parse(json) : [];
+    const remote = await listMatchesFromSupabase();
+    writeSavedMatchesToLocalStorage(remote);
+    return remote;
   } catch (e) {
-    console.error('Failed to load matches', e);
-    return [];
+    console.warn('Falling back to localStorage for saved matches', e);
+    return readSavedMatchesFromLocalStorage();
   }
 }
 
-export function saveMatch(record: MatchRecord): void {
+export async function saveMatch(record: MatchRecord): Promise<void> {
   try {
-    const existing = getSavedMatches();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existing, record]));
-
-    // Trigger background backup
-    backupMatchToSupabase(record);
+    await upsertMatchToSupabase(record);
   } catch (e) {
-    console.error('Failed to save match', e);
-    // Even if local save fails, we probably shouldn't backup? 
-    // Or maybe we should? The try-catch block means local save failed. 
-    // So backup won't run. Correct.
+    console.warn('Supabase save failed, storing locally only', e);
+  }
+
+  try {
+    const existing = readSavedMatchesFromLocalStorage();
+    const withoutSameId = existing.filter(m => m.id !== record.id);
+    writeSavedMatchesToLocalStorage([...withoutSameId, record]);
+  } catch (e) {
+    console.error('Failed to save match to localStorage', e);
     throw e;
   }
 }
 
-export function deleteMatch(id: string): void {
+export async function deleteMatch(id: string): Promise<void> {
   try {
-    const matches = getSavedMatches();
+    const { error } = await supabase
+      .from('football_matches')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.warn('Supabase delete failed, deleting local cache only', error);
+    }
+  } catch (e) {
+    console.warn('Supabase delete crashed, deleting local cache only', e);
+  }
+
+  try {
+    const matches = readSavedMatchesFromLocalStorage();
     const updated = matches.filter(m => m.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    writeSavedMatchesToLocalStorage(updated);
   } catch (e) {
     console.error('Failed to delete match', e);
     throw e;
   }
 }
 
-export function getMatchById(id: string): MatchRecord | null {
-  const matches = getSavedMatches();
-  return matches.find(m => m.id === id) || null;
+export async function getMatchById(id: string): Promise<MatchRecord | null> {
+  try {
+    const remote = await getMatchByIdFromSupabase(id);
+    if (remote) {
+      const local = readSavedMatchesFromLocalStorage();
+      const merged = [remote, ...local.filter(m => m.id !== id)];
+      writeSavedMatchesToLocalStorage(merged);
+    }
+    return remote;
+  } catch (e) {
+    console.warn('Falling back to localStorage for match detail', e);
+    const local = readSavedMatchesFromLocalStorage();
+    return local.find(m => m.id === id) ?? null;
+  }
 }
 
 export function computePlayerStats(events: MatchEvent[]) {

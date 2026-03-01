@@ -10,16 +10,19 @@ import SavedMatchesPage from './pages/SavedMatchesPage';
 import { TeamDetailPage } from './pages/TeamDetailPage';
 import { StatsPage } from './pages/StatsPage';
 import { fixLegacyData } from './utils/idUtils';
-import { syncPlayersToSupabase } from './services/playerSync';
 
 import { Outlet } from 'react-router-dom';
 import { NavigationLayer } from './components/common/NavigationLayer';
+import { PWAUpdateBanner } from './components/common/PWAUpdateBanner';
+import { SupabaseDiagnosticsPanel } from './components/common/SupabaseDiagnosticsPanel';
 
 // Root Layout to include NavigationLayer
 function RootLayout() {
   return (
     <>
       <NavigationLayer />
+      <PWAUpdateBanner />
+      <SupabaseDiagnosticsPanel />
       <Outlet />
     </>
   );
@@ -77,7 +80,6 @@ const router = createBrowserRouter([
 function App() {
   useEffect(() => {
     fixLegacyData();
-    syncPlayersToSupabase();
   }, []);
 
   return <RouterProvider router={router} />;
