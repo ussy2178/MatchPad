@@ -1,5 +1,6 @@
 import { db } from '../db/db';
 import { supabase } from '../lib/supabase';
+import { normalizeTeamId } from '../utils/idUtils';
 
 const UPSERT_CHUNK_SIZE = 500;
 type Position = 'GK' | 'DF' | 'MF' | 'FW';
@@ -59,7 +60,7 @@ export async function syncPlayersToSupabase() {
         }
         return {
           name: p.name,
-          team_id: p.teamId,
+          team_id: normalizeTeamId(p.teamId),
           jersey_number: p.jerseyNumber,
           position
         };
@@ -71,10 +72,8 @@ export async function syncPlayersToSupabase() {
       return;
     }
 
-    // 3. Upsert to Supabase
-    // Using upsert with { onConflict: 'id' } to avoid duplicates
-    // Chunking might be needed if too many players, but for now sending all at once.
-    // Supabase handles reasonably large payloads.
+    // 3. Upsert to Supabase by unique key (team_id, jersey_number)
+    // Requires DB unique constraint/index on (team_id, jersey_number).
 
     for (let i = 0; i < payload.length; i += UPSERT_CHUNK_SIZE) {
       const chunk = payload.slice(i, i + UPSERT_CHUNK_SIZE);

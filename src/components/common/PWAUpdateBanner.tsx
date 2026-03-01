@@ -7,6 +7,9 @@ export function PWAUpdateBanner() {
   const location = useLocation();
   const isHome = location.pathname === '/';
   const isWatchMode = /^\/match\/[^/]+\/watch$/.test(location.pathname);
+  const canShowDiagnostics =
+    import.meta.env.DEV &&
+    import.meta.env.VITE_ENABLE_SUPABASE_DIAGNOSTICS === 'true';
   const [dismissed, setDismissed] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
 
@@ -38,14 +41,25 @@ export function PWAUpdateBanner() {
   return (
     <div className={styles.wrapper}>
       {isHome && (
-        <button
-          type="button"
-          className={styles.checkButton}
-          onClick={applyUpdate}
-          disabled={isApplying}
-        >
-          {isApplying ? 'Updating...' : 'Check update'}
-        </button>
+        <>
+          <button
+            type="button"
+            className={styles.checkButton}
+            onClick={applyUpdate}
+            disabled={isApplying}
+          >
+            {isApplying ? 'Updating...' : 'Check update'}
+          </button>
+          {canShowDiagnostics && (
+            <button
+              type="button"
+              className={`${styles.checkButton} ${styles.diagnosticsButton}`}
+              onClick={() => window.dispatchEvent(new Event('show-supabase-diagnostics'))}
+            >
+              Diagnostics
+            </button>
+          )}
+        </>
       )}
 
       {needRefresh && !dismissed && (

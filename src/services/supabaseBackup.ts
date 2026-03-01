@@ -1,6 +1,39 @@
 import { supabase } from '../lib/supabase';
 import type { MatchEvent } from '../types/match';
 import type { MatchRecord } from '../utils/matchStorage';
+import type { WatchModeState } from '../utils/matchStorage';
+import type { Team } from '../db/db';
+
+function ensureSnapshot(match: MatchRecord): WatchModeState {
+  if (match.snapshot) return match.snapshot;
+  const fallbackHome: Team = {
+    id: `saved-home-${match.id}`,
+    dbTeamId: `saved-home-${match.id}`,
+    name: match.homeTeam || 'Home',
+  };
+  const fallbackAway: Team = {
+    id: `saved-away-${match.id}`,
+    dbTeamId: `saved-away-${match.id}`,
+    name: match.awayTeam || 'Away',
+  };
+  return {
+    matchId: match.id,
+    homeTeam: fallbackHome,
+    awayTeam: fallbackAway,
+    homePlayers: [],
+    awayPlayers: [],
+    initialHomeLineup: {},
+    initialAwayLineup: {},
+    homeLineup: {},
+    awayLineup: {},
+    homeBench: [],
+    awayBench: [],
+    homeFormation: '4-4-2',
+    awayFormation: '4-4-2',
+    timerState: undefined,
+    events: match.events ?? [],
+  };
+}
 
 export async function backupMatchToSupabase(match: MatchRecord) {
   if (!supabase || !match) {
@@ -10,6 +43,18 @@ export async function backupMatchToSupabase(match: MatchRecord) {
 
   try {
     console.log("Supabase backup triggered");
+    const snapshotToSave = match.snapshot ?? ensureSnapshot(match);
+    console.log('[supabaseBackup] snapshot saved to football_matches', {
+      matchId: snapshotToSave.matchId,
+      source: match.snapshot ? 'match.snapshot' : 'fallback',
+      homeFormation: snapshotToSave.homeFormation,
+      awayFormation: snapshotToSave.awayFormation,
+      homeBenchCount: snapshotToSave.homeBench?.length ?? 0,
+      awayBenchCount: snapshotToSave.awayBench?.length ?? 0,
+      hasTimerState: !!snapshotToSave.timerState,
+      homeLineupSize: Object.keys(snapshotToSave.homeLineup ?? {}).length,
+      awayLineupSize: Object.keys(snapshotToSave.awayLineup ?? {}).length,
+    });
 
     const { data: savedMatch, error } = await supabase
       .from("football_matches")
@@ -31,6 +76,7 @@ export async function backupMatchToSupabase(match: MatchRecord) {
         home_score: match.score.home,
         away_score: match.score.away,
         notes: match.notes ?? {},
+        snapshot: snapshotToSave,
       }, { onConflict: 'id' })
       .select()
       .single();

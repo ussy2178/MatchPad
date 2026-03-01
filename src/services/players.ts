@@ -1,7 +1,7 @@
 import type { Player } from '../db/db';
 import { J1_TEAMS } from '../db/seeds';
 import { supabase } from '../lib/supabase';
-import { normalizePosition, normalizeTeamId } from '../utils/idUtils';
+import { normalizePosition as normalizePositionRaw, normalizeTeamId } from '../utils/idUtils';
 
 const PLAYERS_CACHE_KEY = 'matchpad:playersCache:v1';
 const PLAYERS_UPDATED_EVENT = 'matchpad:players-updated';
@@ -22,11 +22,12 @@ type FootballPlayerRow = {
 };
 
 type NewPlayerInput = Omit<Player, 'id'>;
+type Position = 'GK' | 'DF' | 'MF' | 'FW';
 type FootballPlayerUpsertRow = {
   team_id: string;
   jersey_number: number;
   name: string;
-  position: string;
+  position: Position;
 };
 const UPSERT_CHUNK_SIZE = 500;
 
@@ -53,17 +54,27 @@ function mapRowToPlayer(row: FootballPlayerRow): Player {
     name: row.name,
     teamId: resolveAppTeamId(row.team_id),
     jerseyNumber: row.jersey_number,
-    position: normalizePosition(row.position) as PlayerPosition,
+    position: normalizePositionToUnion(row.position) ?? 'MF',
   };
 }
 
 function mapPlayerToRow(player: Player) {
+  const position = normalizePositionToUnion(player.position) ?? 'MF';
   return {
     name: player.name,
     team_id: resolveDbTeamId(player.teamId),
     jersey_number: player.jerseyNumber,
-    position: normalizePosition(player.position),
+    position,
   };
+}
+
+function isPosition(value: string): value is Position {
+  return value === 'GK' || value === 'DF' || value === 'MF' || value === 'FW';
+}
+
+function normalizePositionToUnion(value: string): Position | null {
+  const normalized = normalizePositionRaw(value);
+  return isPosition(normalized) ? normalized : null;
 }
 
 function toUpsertRow(row: {
@@ -78,11 +89,18 @@ function toUpsertRow(row: {
     }
     return null;
   }
+  const position = normalizePositionToUnion(row.position);
+  if (!position) {
+    if (import.meta.env.DEV) {
+      console.warn('[players] skipped row with invalid position', row);
+    }
+    return null;
+  }
   return {
     team_id: normalizeTeamId(row.team_id),
     jersey_number: row.jersey_number,
     name: row.name,
-    position: normalizePosition(row.position),
+    position,
   };
 }
 
@@ -255,10 +273,11 @@ export function onPlayersUpdated(listener: () => void): () => void {
 }
 
 export async function addPlayerToSupabase(input: NewPlayerInput): Promise<Player> {
+  const normalizedPosition = normalizePositionToUnion(input.position) ?? 'MF';
   const player: Player = {
     ...input,
     teamId: normalizeTeamId(input.teamId),
-    position: normalizePosition(input.position) as PlayerPosition,
+    position: normalizedPosition as PlayerPosition,
     id: crypto.randomUUID(),
   };
 
@@ -277,7 +296,10 @@ export async function updatePlayerInSupabase(id: string, updates: Partial<Player
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.teamId !== undefined) payload.team_id = resolveDbTeamId(updates.teamId);
   if (updates.jerseyNumber !== undefined) payload.jersey_number = updates.jerseyNumber;
-  if (updates.position !== undefined) payload.position = normalizePosition(updates.position);
+  if (updates.position !== undefined) {
+    const normalizedPosition = normalizePositionToUnion(updates.position);
+    if (normalizedPosition) payload.position = normalizedPosition;
+  }
 
   const { error } = await supabase
     .from('football_players')
@@ -309,7 +331,7 @@ export async function importPlayersToSupabase(teamId: string, players: Omit<Play
       name: player.name,
       team_id: dbTeamId,
       jersey_number: player.jerseyNumber,
-      position: normalizePosition(player.position),
+      position: normalizePositionRaw(player.position),
     });
   }).filter((row): row is FootballPlayerUpsertRow => row !== null);
 

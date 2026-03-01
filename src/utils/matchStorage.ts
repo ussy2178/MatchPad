@@ -83,6 +83,45 @@ export interface MatchRecord {
 
 const STORAGE_KEY = 'savedMatches';
 
+function ensureSnapshot(record: MatchRecord): WatchModeState {
+  if (record.snapshot) {
+    return {
+      ...record.snapshot,
+      matchId: record.snapshot.matchId || record.id,
+      events: normalizeMatchEvents(record.snapshot.events ?? record.events ?? []),
+    };
+  }
+
+  const fallbackHomeTeam: Team = {
+    id: `saved-home-${record.id}`,
+    dbTeamId: `saved-home-${record.id}`,
+    name: record.homeTeam || 'Home',
+  };
+  const fallbackAwayTeam: Team = {
+    id: `saved-away-${record.id}`,
+    dbTeamId: `saved-away-${record.id}`,
+    name: record.awayTeam || 'Away',
+  };
+
+  return {
+    matchId: record.id,
+    homeTeam: fallbackHomeTeam,
+    awayTeam: fallbackAwayTeam,
+    homePlayers: [],
+    awayPlayers: [],
+    initialHomeLineup: {},
+    initialAwayLineup: {},
+    homeLineup: {},
+    awayLineup: {},
+    homeBench: [],
+    awayBench: [],
+    homeFormation: '4-4-2',
+    awayFormation: '4-4-2',
+    timerState: undefined,
+    events: normalizeMatchEvents(record.events ?? []),
+  };
+}
+
 type SupabaseMatchRow = {
   id: string;
   created_at?: string | null;
@@ -238,29 +277,39 @@ function mapMatchRowsToRecords(
 }
 
 async function upsertMatchToSupabase(record: MatchRecord): Promise<void> {
+  const snapshotToSave = record.snapshot ?? ensureSnapshot(record);
+  const matchRow = {
+    id: record.id,
+    home_team: record.homeTeam,
+    away_team: record.awayTeam,
+    home_score: record.score.home,
+    away_score: record.score.away,
+    notes: record.notes ?? {},
+    snapshot: snapshotToSave,
+  };
   console.log(
     '[saveMatch] upsert match',
     record.id,
     'events:',
     record.events.length,
     'hasSnapshot:',
-    !!record.snapshot
+    !!snapshotToSave
   );
+  console.log('[saveMatch] snapshot saved to football_matches', {
+    matchId: snapshotToSave.matchId,
+    source: record.snapshot ? 'record.snapshot' : 'fallback',
+    homeFormation: snapshotToSave.homeFormation,
+    awayFormation: snapshotToSave.awayFormation,
+    homeBenchCount: snapshotToSave.homeBench?.length ?? 0,
+    awayBenchCount: snapshotToSave.awayBench?.length ?? 0,
+    hasTimerState: !!snapshotToSave.timerState,
+    homeLineupSize: Object.keys(snapshotToSave.homeLineup ?? {}).length,
+    awayLineupSize: Object.keys(snapshotToSave.awayLineup ?? {}).length,
+  });
+  console.log('matchRow', matchRow);
   const { error: matchError } = await supabase
     .from('football_matches')
-    .upsert(
-      {
-        id: record.id,
-        home_team: record.homeTeam,
-        away_team: record.awayTeam,
-        home_score: record.score.home,
-        away_score: record.score.away,
-        notes: record.notes ?? {},
-        snapshot: record.snapshot ?? null,
-        player_summary: record.playerSummary ?? {},
-      },
-      { onConflict: 'id' }
-    );
+    .upsert(matchRow, { onConflict: 'id' });
 
   if (matchError) throw matchError;
 
@@ -492,20 +541,25 @@ export async function getSavedMatches(): Promise<MatchRecord[]> {
 }
 
 export async function saveMatch(record: MatchRecord): Promise<void> {
-  try {
-    await upsertMatchToSupabase(record);
-  } catch (e) {
-    console.warn('Supabase save failed, storing locally only', e);
-  }
+  const recordWithSnapshot: MatchRecord = {
+    ...record,
+    snapshot: ensureSnapshot(record),
+  };
 
+  // Local storage is the source of immediate UX success.
   try {
     const existing = readSavedMatchesFromLocalStorage();
-    const withoutSameId = existing.filter(m => m.id !== record.id);
-    writeSavedMatchesToLocalStorage([...withoutSameId, record]);
+    const withoutSameId = existing.filter(m => m.id !== recordWithSnapshot.id);
+    writeSavedMatchesToLocalStorage([...withoutSameId, recordWithSnapshot]);
   } catch (e) {
     console.error('Failed to save match to localStorage', e);
     throw e;
   }
+
+  // Supabase sync runs in background and must never break save UX.
+  void upsertMatchToSupabase(recordWithSnapshot).catch((e) => {
+    console.warn('Supabase save failed (background sync)', e);
+  });
 }
 
 export async function deleteMatch(id: string): Promise<void> {

@@ -27,6 +27,12 @@
   cursor: not-allowed;
 }
 
+.diagnosticsButton {
+  font-size: 11px;
+  padding: 4px 8px;
+  opacity: 0.9;
+}
+
 .toast {
   pointer-events: auto;
   width: min(280px, calc(100vw - 24px));
